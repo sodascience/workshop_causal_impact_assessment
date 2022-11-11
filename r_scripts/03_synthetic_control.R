@@ -32,18 +32,28 @@ syncont <-
   generate_predictor(
     time_window = 1975,
     cigsale_1975 = cigsale
-  ) %>%
-  
-  generate_predictor(time_window=1980,
-                     cigsale_1980 = cigsale) %>%
-  
-  generate_predictor(time_window=1988,
-                     cigsale_1988 = cigsale) %>%
-  
-  
+  ) |> 
+  generate_predictor(
+    time_window = 1980,
+    cigsale_1980 = cigsale
+  ) |> 
+  generate_predictor(
+    time_window = 1988,
+    cigsale_1988 = cigsale
+  )
+
+syncont <- 
+  syncont |> 
   # Generate the fitted weights for the synthetic control
-  generate_weights(optimization_window =1970:1988,
-                   Margin.ipop=.02,Sigf.ipop=7,Bound.ipop=6) %>%
-  
-  # Generate the synthetic control
-  generate_control()
+  generate_weights(
+    optimization_window = 1970:1988,
+    Margin.ipop = .02,
+    Sigf.ipop = 7,
+    Bound.ipop = 6
+  )
+
+# Generate the synthetic control
+syncont_control <- generate_control(syncont)
+
+plot_trends(syncont_control, time_window = 1970:2000) 
+plot_placebos(syncont_control, time_window = 1970:2000)
