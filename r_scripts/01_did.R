@@ -2,7 +2,7 @@ library(tidyverse)
 
 prop99 <- read_rds("data/proposition99.rds")
 
-# first plot
+# First plot
 prop99 |> 
   mutate(cali = ifelse(state == "California", "California", "Other states")) |> 
   arrange(desc(cali)) |> 
@@ -82,5 +82,16 @@ did_dat |>
   annotate("text", label = "Utah", y = 69, colour = "darkgrey", x = 1, hjust = 1) 
 
 ggsave("figures/did.png", width = 7, height = 5, bg = "white", dpi = 300)
+
+
+# Now we want to know about uncertainty
+# model with interaction effect
+mod_did <- lm(cigsale ~ state * prepost, data = prop99_filt)
+summary(mod_did)
+
+# with robust standard errors to account for autocorrelation
+library(sandwich)
+library(lmtest)
+coeftest(mod_did, vcov. = vcovHAC)
 
 
