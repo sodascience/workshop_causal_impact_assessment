@@ -1,8 +1,8 @@
 library(tidyverse)
 library(tidysynth)
 
+# Read the dataset
 prop99 <- read_rds("data/proposition99.rds")
-
 
 # Create synthetic control object
 prop99_syn <- 
@@ -16,12 +16,14 @@ prop99_syn <-
     generate_placebos = TRUE
   )
 
-# in tidysynth, the grab_* functions can be used to inspect parts of the model
-# here, we inspect the outcome (cigsale) for the treated unit and the potential controls
+# in tidysynth, the grab_* functions can be used to inspect 
+# parts of the model here, we inspect the outcome (cigsale) 
+# for the treated unit and the potential controls
 grab_outcome(prop99_syn)
 grab_outcome(prop99_syn, type = "controls")
 
-# Now, generate the aggregate predictors used to estimate the weights
+# Now, generate the aggregate predictors used to estimate 
+# the weights
 prop99_syn <- 
   prop99_syn |> 
   generate_predictor(
@@ -67,7 +69,6 @@ grab_predictor_weights(prop99_syn)
 
 # and we can create a plot as well
 plot_weights(prop99_syn)
-
 
 # Generate the synthetic control
 prop99_syn_control <- generate_control(prop99_syn)
