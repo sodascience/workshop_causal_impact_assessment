@@ -1,134 +1,107 @@
 # Causal Impact script
+library(tidyverse)
+library(mice)
 library(CausalImpact)
-
-prop99 <- readRDS("data/proposition99.rds")
-
-prop99 <- as.data.frame(prop99)
+library(fpp3)
 
 # ----------------------------------------------------------
 # ---------------- Data preparation ------------------------
 # ----------------------------------------------------------
+# CausalImpact package needs data in a specific format:
+# - there should be no missing values
+# - the response variable must be in the first column
+# - any potential covariates in subsequent columns
+# - There should not be a "year" or index column
 
-# causalimpact package needs data in the format:
-# the response variable must be in the first column, and any covariates in subsequent columns
+# Read the dataset
+prop99 <- read_rds("data/proposition99.rds")
 
-states <- unique(prop99$state)
+# impute missing values because causalimpact cannot deal with missingness
+prop99_imputed <- 
+  mice(prop99, m = 1) |> 
+  complete() |> 
+  as_tibble()
 
-years <- unique(prop99$year)
+# data with all covariates from all states in donor pool
+prop99_wide <- 
+  prop99_imputed |> 
+  pivot_wider(
+    names_from = state, 
+    values_from = c(cigsale, lnincome, beer, age15to24, retprice)
+  ) |> 
+  select(cigsale_California, everything(), -year)
 
-# which years are pre and post intervention (intervention took place in 1988)
-n_t <- length(years)
-
-# pre and post vectors in format causalimpact require
-# start and end row numbers for pre and post periods
-pre <- c(1,(which(years == 1988)))
-post <- c(which(years == 1989),n_t)
-
-# outcome variable for california
-cf_out <- prop99[which(prop99$state == "California"),"cigsale"]
-length <- nrow(cf_out)
-
-# control states (unsuitable states already omitted, see abadie table 2)
-control_states <- states[states!= "California"]
-
-# now obtain cigarette sales in all other states
-cont_out <- sapply(control_states, function(s){
-  prop99[which(prop99$state == s),"cigsale"]
-})
-colnames(cont_out) <- paste0("cigsale_", control_states)
-
-
-# now obtain all other covariate values
-# covnames <- c("retprice")
-covnames <- c("lnincome", "beer","age15to24", "retprice")
-
-# make a matrix of covariate values
-cont_cov_list <- lapply(control_states, function(s){
-  sapply(covnames,function(nm){
-    prop99[which(prop99$state == s),nm]
-  })
-})
-
-# stupid imputaiton method, because this thing can't deal with 
-
-# lapply(cont_cov_list,function(l) apply(l,2,function(col) any(is.na(col))))
-
-
-# data is missing for some variables for some years
-# loop through states
-for(s in 1:length(cont_cov_list)){
-  # loop through variables
-  for(col in 1:ncol(cont_cov_list[[s]])){
-    # if no missing, skip ahead
-    if(!any(is.na(cont_cov_list[[s]][,col]))) next
-    # otherwise, find start and end points
-    observed <- which(!is.na(cont_cov_list[[s]][,col]))
-    start <- observed[1]
-    if(start > 1){
-    # impute missing at the start with whatever is first observed
-    cont_cov_list[[s]][,col][1:(start-1)] <- cont_cov_list[[s]][,col][start]
-    }
-    end <- max(observed)
-    if(length(cont_cov_list[[s]][,col]) > end){
-      cont_cov_list[[s]][,col][(end+1):(length(cont_cov_list[[s]][,col]))] <- cont_cov_list[[s]][,col][end]
-    }
-  }
-}
-
-cont_cov <- do.call("cbind", cont_cov_list)
-
-# write names of covariates per state
-cnames <- expand.grid(covnames, control_states)
-
-colnames(cont_cov)<- paste0(cnames[,1], "_", cnames[,2])
-
-# put this all together
-# include only cigarette sales
-data_cigonly <- cbind(cf_out, cont_out)
-# including cigarette sales and all covariates of the control series (omit covariates of california)
-data_allcontrol <- cbind(cf_out, cont_out, cont_cov)
+# data with only cigarette sales from other states as potential covariates
+prop99_cigonly <- 
+  prop99_wide |> 
+  select(contains("cigsale"))
 
 # ----------------------------------------------------------
 # ---------------------- Run model  ------------------------
 # ----------------------------------------------------------
 
-impact1 <- CausalImpact(data = data_cigonly, pre.period = pre, post.period = post)
-impact1 <- CausalImpact(data = data_cigonly, pre.period = pre, post.period = post,
-                        model.args = list(dynamic.regression = TRUE))
-plot(impact1)
-# bsts model summary through there
-summary(impact1$model$bsts.model)$coefficients
-summary(impact1$model$bsts.model)
+# Here, we create a causalimpact model for the cigarette sales data 
+# using only cigarette sales from other states as potential covariates
+pre_idx <- c(1, 19) # the first 18 years (1970 - 1988) are pre-intervention
+post_idx <- c(20, 31) # the years after that (1989 - 2000)
 
+impact_cigsale <- CausalImpact(
+  data = prop99_cigonly, 
+  pre.period = pre_idx, 
+  post.period = post_idx
+)
 
-rownames(summary(impact1$model$bsts.model)$coefficients)
+# then, plot the causal impact model
+plot(impact_cigsale)
 
-plot(summary(impact1$model$bsts.model)$coefficients[,1])
+# Now, we will investigate the model a bit more
+impact_cigsale_model <- impact_cigsale$model$bsts.model
 
-impact2 <- CausalImpact(data = data_allcontrol, pre.period = pre, post.period = post)
-plot(impact2)
-impact2
+# which covariates are most important in the prediction?
+plot(impact_cigsale_model, "coefficients")
 
-rownames(summary(impact2$model$bsts.model)$coefficients)
-plot(summary(impact2$model$bsts.model)$coefficients[,1])
+# what is the value of those coefficients?
+summary(impact_cigsale_model)$coefficients
 
-plot(impact2$model$bsts.model,"components")
+# compare those time series to the true time series
+plot(impact_cigsale_model, "predictors")
 
-impact3 <- CausalImpact(data = data_allcontrol[,1], pre.period = pre, post.period = post)
-impact3 <- CausalImpact(data = data_allcontrol[,1], pre.period = pre, post.period = post,
-                        model.args = list(dynamic.regression = TRUE))
-plot(impact3)
+# Now, we create a CausalImpact model using all potential control variable
+impact_all <- CausalImpact(
+  data = prop99_wide, 
+  pre.period = pre_idx, 
+  post.period = post_idx
+)
 
-plot(impact3$model$bsts.model,"components")
+# then, plot the causal impact model
+plot(impact_all)
 
-impact3$model$bsts.model
+# Now, we will investigate the model a bit more
+impact_all_model <- impact_all$model$bsts.model
 
-# to do here: try out different bsts models!
+# which covariates are most important in the prediction?
+plot(impact_all_model, "coefficients")
+
+# what is the value of those coefficients?
+summary(impact_all_model)$coefficients
+
+# compare those time series to the true time series
+plot(impact_all_model, "predictors")
 
 # Open questions:
 # Is there actually regularization happening? What happened to spike and slab? coefficients look not regularized
 # try out custom bsts model. how do we understand what's happening here?
 # can we find an example where the pre-period time-series is actually used?
+# with prior.level.sd we can make a random walk, even without predictors:
+# plot(CausalImpact(data = prop99_cigonly[,1], pre.period = pre_idx, post.period = post_idx))
+# versus
+# plot(CausalImpact(data = prop99_cigonly[,1], pre.period = pre_idx, post.period = post_idx,
+#                   model.args = list(prior.level.sd = 0.5)))
+
+# where does the increasing uncertainty over time in the regression part of the model come from?
+# plot(impact_all_model, "components")
+# this is a property of time-series models like ARIMA, but we only see regression coefficients in bsts?
+
 
 
 # ----------------------------------------------------------
@@ -136,64 +109,47 @@ impact3$model$bsts.model
 # ----------------------------------------------------------
 
 # Here: very basic CITS analysis!
-# not enough uncertainty 
+# create a simple dataset with only one potential covariate
+# as a time-series object (tsibble) because that's what the
+# fpp3 package needs!
+prop99_ts <- 
+  prop99_cigonly |> 
+  select(cigsale_California, cigsale_Utah, cigsale_Illinois) |> 
+  mutate(years = 1970:2000) |> 
+  as_tsibble(index = "years")
 
-# pre and post vectors in format causalimpact requires
-end_pre <- which(years == 1988)
-# post <- c(which(years == 1989),n_t)
-
-datasimp <- as.data.frame(cbind(data_cigonly[,1], data_cigonly[,"cigsale_Utah"]))
-colnames(datasimp) <- c("cali", "utah")
-
-library(fpp3)
-date <- years
-# make pre-intervention data
-pre.dat <- tibble(date=1:end_pre ,y = datasimp$cali[1:end_pre], x = datasimp$utah[1:end_pre])
-pre.dat <- as_tsibble(pre.dat, index=date)
-
-# make post-intervention data
-post.dat <- tibble(date=(end_pre+1):nrow(datasimp) ,
-                   y = datasimp$cali[(end_pre+1):nrow(datasimp)], 
-                   x = datasimp$utah[(end_pre+1):nrow(datasimp)])
-post.dat <- as_tsibble(post.dat, index=date)
+# divide into pre and post-intervention, as a time
+prop99_pre  <- prop99_ts[1:19,]
+prop99_post <- prop99_ts[20:31,]
 
 # fit data
-fit1 <- pre.dat %>% model(ARIMA(y ~ x))
-report(fit1)
-# see how the model is very similar to the one described above!
+fit_arima <-  prop99_pre |> 
+  model( 
+    timeseries = ARIMA(cigsale_California), # no regression!
+    regression = ARIMA(cigsale_California ~ cigsale_Utah + cigsale_Illinois)
+  )
 
-# make forecast for the post-intervention period and save this in an object
-fcasts <- fit1 %>% forecast(new_data = post.dat)
+# timeseries is an ar1 model on the second difference
+report(fit_arima |> select(timeseries))
 
-# now plot the original data and forecasts
-fcasts %>% autoplot(bind_rows(pre.dat,post.dat)) + autolayer(post.dat, y, colour = "black") +
-  geom_vline(xintercept =end_pre+1, linetype = "dotted", color = "blue")
+# regression is a linear regression on the first difference
+report(fit_arima |> select(regression))
 
-
-
-
-# no x
-
-date <- years
-# make pre-intervention data
-pre.dat <- tibble(date=1:end_pre ,y = datasimp$cali[1:end_pre])
-pre.dat <- as_tsibble(pre.dat, index=date)
-
-# make post-intervention data
-post.dat <- tibble(date=(end_pre+1):nrow(datasimp) ,
-                   y = datasimp$cali[(end_pre+1):nrow(datasimp)]
-                  )
-post.dat <- as_tsibble(post.dat, index=date)
-
-# fit data
-fit1 <- pre.dat %>% model(ARIMA(y))
-report(fit1)
-# see how the model is very similar to the one described above!
-
-# make forecast for the post-intervention period and save this in an object
-fcasts <- fit1 %>% forecast(new_data = post.dat)
+# make forecasts for the post-intervention period and save this in an object
+fcasts <- fit_arima |> forecast(new_data = prop99_post)
 
 # now plot the original data and forecasts
-fcasts %>% autoplot(bind_rows(pre.dat,post.dat)) + autolayer(post.dat, y, colour = "black") +
-  geom_vline(xintercept =end_pre+1, linetype = "dotted", color = "blue")
+fcasts |> 
+  autoplot(prop99_ts) + 
+  geom_point(aes(y = cigsale_California), size = 0.5) +
+  facet_grid(rows = vars(.model)) + 
+  geom_vline(xintercept = 1989, linetype = "dotted", color = "blue")
+
+# get the differences between the forecast and the real data to estimate causal effect
+# as dist_normal object from package {distributional}
+fc <- fcasts |> filter(.model == "regression") |> pull(cigsale_California) - prop99_post$cigsale_California
+mfc <- sapply(fc, mean)
+
+# and the cumulative difference 
+cumsum(mfc)
 
