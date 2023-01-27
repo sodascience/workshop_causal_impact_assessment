@@ -1,0 +1,26 @@
+Outline Intro 1
+- Who we are + Schedule
+
+Context: policy interventions, comparative case studies, examples, examples
+	- Similar research questions, but many diffrent methods designed to estimate this question
+	- method use different resources (data types, amounts) and different statistical approaches (and i guess different assumptions?)
+	- Quick overview / tables / map (comes back at the end)
+
+Causal Inference and potential outcomes (references, references)
+ - Causal inference as missing data problem
+ - ICEs - fundamental problem, you can't observe both
+ - "Data" table 
+ - Typical approach, estimate ACE. Idea is that you can use information in your data to estimate this difference
+		- Assumptions very brief: (exchangeability or conditional exchangeability), no interference, (others like positivity etc etc.)
+		- Maybe RCT briefly explained why this helps
+
+Causal Inference and Policy Evaluations
+ - In this setting we typically have one unit we care about. We conceptualize the intervention as turning "on" at a point in time.
+		- "Data" table again, this time changed
+ - The basic logic is still the same; we want to compute or estimate the diffeerences between the lower two parts
+	- Many of the approaches we will see can be thought of as "imputing" that missing data and takig the difference to assess the causal effect
+		- as we will see ther eare many different ways to do that imputation, and also ways of parameterizing that difference in a statistical model
+- What method is appropriate is (in part) defined by the resources you have available (which will be the focus of the workshop)
+- Big table of methods
+Pass over to EJe
+
