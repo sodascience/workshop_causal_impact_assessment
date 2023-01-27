@@ -1,10 +1,11 @@
 # Workshop causal impact assesment
 
+
 ## To do
 
 - [ ] Make lectures
   - [ ] Intro 1
-  - [ ] Intro 2
+  - [x] Intro 2
   - [ ] ITS
   - [ ] Synth control
   - [ ] Causal Impact
