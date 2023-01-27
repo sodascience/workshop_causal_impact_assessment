@@ -2,6 +2,13 @@ library(tidyverse)
 
 prop99 <- read_rds("data/proposition99.rds")
 
+# cigsales totals
+prop99 |> 
+  group_by(state) |> 
+  summarize(total_cigsales = sum(cigsale)) |> 
+  arrange(total_cigsales)
+
+
 # First plot
 prop99 |> 
   mutate(cali = ifelse(state == "California", "California", "Other states")) |> 
