@@ -1,0 +1,29 @@
+---
+title: "Introduction"
+author: "Erik-Jan van Kesteren & Oisín Ryan"
+format: 
+  html:
+    toc: true
+---
+
+```{r}
+#| label: setup
+#| include: false
+#| message: false
+#| warning: false
+library(tidyverse)
+```
+
+In this practical, we will ...
+
+## The data
+
+```{r}
+#| label: data
+prop99 <- read_rds("../../data/proposition99.rds")
+prop99
+```
+
+## Section 1
+
+some more text

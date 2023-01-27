@@ -15,4 +15,5 @@
   - [ ] ITS
   - [ ] Synth control
   - [ ] Causal Impact
-
+- [ ] Set up website
+- [ ] Improve readme
