@@ -77,3 +77,4 @@ Science (SoDa)](https://odissei-soda.nl/) team.
 
 For questions about this course, you can contact us at [soda@odissei-data.nl](mailto:soda@odissei-data.nl).
 
+Course logo created by Nithinan Tatah from Noun Project
