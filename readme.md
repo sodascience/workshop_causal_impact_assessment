@@ -1,21 +1,3 @@
-# To do
-
-- [ ] Make lectures
-  - [ ] Intro 1
-  - [x] Intro 2
-  - [ ] ITS
-  - [ ] Synth control
-  - [ ] Causal Impact
-  - [ ] Discussion
-- [ ] Make ITS script
-- [ ] Make practicals
-  - [ ] Intro
-  - [ ] ITS
-  - [ ] Synth control
-  - [ ] Causal Impact
-- [ ] Set up website
-- [ ] Improve readme
-
 # Workshop causal impact assesment
 
 This webpage contains all the materials for a one-day workshop on causal impact assessment. The materials on this website are [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) licensed.
