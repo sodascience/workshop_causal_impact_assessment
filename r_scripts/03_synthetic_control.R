@@ -12,6 +12,18 @@ prop99_syn <-
     unit = state,
     time = year,
     i_unit = "California",
+    i_time = 1988
+  )
+
+# now with placebo
+# Create synthetic control object
+prop99_syn <- 
+  prop99 |> 
+  synthetic_control(
+    outcome = cigsale,
+    unit = state,
+    time = year,
+    i_unit = "California",
     i_time = 1988,
     generate_placebos = TRUE
   )
@@ -60,7 +72,7 @@ prop99_syn <-
   prop99_syn |> 
   generate_weights(
     optimization_window = 1970:1988, # pre-intervention period
-    margin_ipop = 0.2, sigf_ipo = 7, bound_ipop = 6
+    margin_ipop = 0.2, bound_ipop = 6
   )
 
 # let's look at the learned unit weights and predictor weights
@@ -69,9 +81,13 @@ grab_predictor_weights(prop99_syn)
 
 # and we can create a plot as well
 plot_weights(prop99_syn)
+ggsave("figures/synthetic_control_weights.png", width = 9, height = 9, bg = "white", dpi = 300)
 
 # Generate the synthetic control
 prop99_syn_control <- generate_control(prop99_syn)
+grab_synthetic_control(prop99_syn_control)
 
 plot_trends(prop99_syn_control) 
+ggsave("figures/synthetic_control_timeseries.png", width = 9, height = 6, bg = "white", dpi = 300)
 plot_placebos(prop99_syn_control)
+ggsave("figures/synthetic_control_permutation.png", width = 9, height = 6, bg = "white", dpi = 300)
