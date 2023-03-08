@@ -60,6 +60,14 @@ install.packages(c("tidyverse", "sandwich", "lmtest", "tidysynth", "rdrobust", "
 
 You can download the dataset we have prepared from here: [`proposition99.rds`](./data/proposition99.rds). Save it in a nicely accessible place, we will be using it in every practical.
 
+## Additional links
+
+- Course materials for [program evaluation for public service](https://evalsp23.classes.andrewheiss.com/)
+- Causal inference for the Brave and True [online python book](https://matheusfacure.github.io/python-causality-handbook/landing-page.html)
+- Using Synthetic Controls: Feasibility, Data Requirements, and Methodological Aspects [pdf available here](https://www.aeaweb.org/articles?id=10.1257/jel.20191450)
+- Forecasting: principles and practice 3rd ed. [online R book](https://otexts.com/fpp3/)
+- Application of causal impact analysis in marketing at [stitch fix](https://multithreaded.stitchfix.com/blog/2016/01/13/market-watch/)
+
 ## Contact
 
 This project is developed and maintained by the [ODISSEI Social Data
