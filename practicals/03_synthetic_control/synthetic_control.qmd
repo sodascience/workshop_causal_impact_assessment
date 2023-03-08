@@ -25,11 +25,13 @@ library(tidyverse)
 library(tidysynth)
 ```
 
-We will again be using the proposition 99 dataset that we prepared.
+We will again be using the proposition 99 dataset:
+```{r}
+#| label: data
+#| code-fold: false
 
-::: {.callout-note}
-## Exercise 1
-Load the `proposition99` dataset in R using the `tidyverse` function `read_rds()`. Give the dataset the name `prop99`. 
+prop99 <- read_rds("raw_data/proposition99.rds")
+```
 
 ```{r}
 #| label: data-true
@@ -38,17 +40,99 @@ Load the `proposition99` dataset in R using the `tidyverse` function `read_rds()
 prop99 <- read_rds("../../data/proposition99.rds")
 ```
 
-```{r}
-#| label: data
-
-# read the dataset to a variable called prop99
-prop99 <- read_rds("raw_data/data/proposition99.rds")
-```
-:::
+In the following sections, you will create an causal effect estimate using the synthetic control method, you will perform inference for this estimate, and you will do some robustness checks.
 
 ## Synthetic control in tidysynth
 
-section 1
+The first step in the `tidysynth` package framework is to create an object from the dataset that will provide the basis of the estimation method.
+
+::: {.callout-note}
+## Exercise 1
+Use the the `synthetic_control()` function to create a synthetic control object from the `prop99` data. Read the help file to (`?synthetic_control`) if you need to know more about the arguments needed. Set the argument `generate_placebos = TRUE` (we will need this later).
+
+```{r}
+#| label: synthcontrol-object
+
+# create a synthetic control object
+prop99_syn <- 
+  prop99 |> 
+  synthetic_control(
+    outcome = cigsale,
+    unit = state,
+    time = year,
+    i_unit = "California",
+    i_time = 1988,
+    generate_placebos = TRUE
+  )
+
+```
+:::
+
+In tidysynth, the `grab_*()` functions can be used to inspect the object in detail. For example, you can use `grab_outcome()` we inspect the outcome (cigsale) for the treated unit and the potential controls.
+
+::: {.callout-note}
+## Exercise 2
+Inspect the outcome variable for the treated and the control units, to check that everything worked as you expected.
+
+```{r}
+#| label: inspect-outcome
+
+# Treated unit (california)
+grab_outcome(prop99_syn)
+
+# control units
+grab_outcome(prop99_syn, type = "controls")
+```
+:::
+
+The next step is to determine and create the variables that will be used for matching and estimating weights. These are called "predictors" in `tidysynth`. 
+
+
+::: {.callout-note}
+## Exercise 3
+Generate the following predictors using the `generate_predictor()` function. You will need to run this function multiple times, once for each time period considered.
+
+- Mean (log-)income in 1980-1988
+- Mean retail price of cigarettes in 1980-1988
+- Mean proportion of people aged 15 to 24 in 1980-1988
+- Mean beer consumption in 1984-1988
+- Cigarette sales in 1975
+- Cigarette sales in 1980
+- Cigarette sales in 1988
+
+NB: there are some missing values in this data, so use `na.rm = TRUE` inside your `mean()` function.
+
+```{r}
+#| label: predictors
+
+# create predictors
+prop99_syn <- 
+  prop99_syn |> 
+  generate_predictor(
+    time_window = 1980:1988,
+    lnincome = mean(lnincome, na.rm = TRUE),
+    retprice = mean(retprice, na.rm = TRUE),
+    age15to24 = mean(age15to24, na.rm = TRUE)
+  ) |> 
+  generate_predictor(
+    time_window = 1984:1988,
+    beer = mean(beer, na.rm = TRUE)
+  ) |> 
+  generate_predictor(
+    time_window = 1975,
+    cigsale_1975 = cigsale
+  ) |> 
+  generate_predictor(
+    time_window = 1980,
+    cigsale_1980 = cigsale
+  ) |> 
+  generate_predictor(
+    time_window = 1988,
+    cigsale_1988 = cigsale
+  )
+```
+:::
+
 
 ## Inference using permutation test
 

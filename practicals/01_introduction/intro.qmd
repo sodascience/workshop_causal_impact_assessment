@@ -73,7 +73,7 @@ prop99 <- read_rds("../../data/proposition99.rds")
 #| label: data
 
 # read the dataset to a variable called prop99
-prop99 <- read_rds("raw_data/data/proposition99.rds")
+prop99 <- read_rds("raw_data/proposition99.rds")
 
 # inspect the first few rows
 head(prop99)
