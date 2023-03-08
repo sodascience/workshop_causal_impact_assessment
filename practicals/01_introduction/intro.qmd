@@ -1,29 +1,233 @@
 ---
-title: "Introduction"
+title: "Introduction: pre-post and diff-in-diff"
+subtitle: "Causal impact assessment workshop"
 author: "Erik-Jan van Kesteren & Oisín Ryan"
+eval: false
 format: 
   html:
     toc: true
+    self-contained: true
+    code-fold: true
+    df-print: paged
+    callout-appearance: simple
+    callout-icon: false
 ---
+
+This is the first practical, where we introduce the dataset and we use it to create pre-post and diff-in-diff estimates for the causal effect of the California proposition 99 policy intervention.
+
+You can use your preferred way of working in R to do the practicals. Our preferred way is this:
+
+- Create a new folder with a good name, e.g., `practicals_causal_impact` 
+- Open RStudio
+- Create a new project from RStudio, which you associate with the folder
+- Create a `raw_data` subfolder
+- Create an R script for the current practical, e.g., `introduction.R`
+- Create your well-documented and [well-styled](https://style.tidyverse.org/) code in this R script
+
+
+::: {.callout-tip appearance="default" icon=true}
+The answers to each exercise are available as a collapsed `code` block. Try to work out the answer yourself before looking at this code block!
+:::
+
+
+In all practicals in this workshop, we make extensive use of the `tidyverse` set of packages. You can load these packages like so:
 
 ```{r}
 #| label: setup
-#| include: false
 #| message: false
 #| warning: false
+#| code-fold: false
+#| eval: true
 library(tidyverse)
 ```
 
-In this practical, we will ...
+In this practical, we will also use the following two packages:
 
+```{r}
+#| label: setup-2
+#| code-fold: false
+library(sandwich)
+library(lmtest)
+```
 ## The data
+We will be using the `proposition99` dataset that we introduced in the lecture. We have prepared the dataset for you to download [`here`](https://github.com/sodascience/workshop_causal_impact_assessment/raw/main/data/proposition99.rds). It is an `rds` file, which is a convenient, portable, and fast binary file format for R.
+
+::: {.callout-note}
+## Exercise 1
+Download the dataset and save it in a nice location, e.g., a `raw_data` folder inside your R project.
+:::
+
+
+::: {.callout-note}
+## Exercise 2
+Load the dataset in R using the `tidyverse` function `read_rds()`. Give the dataset the name `prop99`. Then, inspect the first few rows of the data.
+
+```{r}
+#| label: data-true
+#| echo: false
+#| eval: true
+prop99 <- read_rds("../../data/proposition99.rds")
+```
 
 ```{r}
 #| label: data
-prop99 <- read_rds("../../data/proposition99.rds")
-prop99
+
+# read the dataset to a variable called prop99
+prop99 <- read_rds("raw_data/data/proposition99.rds")
+
+# inspect the first few rows
+head(prop99)
+```
+:::
+
+
+::: {.callout-note}
+## Exercise 3
+Using `filter()`. `group_by()`, `summarize()`, and `arrange()`, find out which state had the highest average retail price of a box of cigarettes before 1988.
+
+```{r}
+#| label: retailprice
+
+# read the dataset to a variable called prop99
+prop99 |> 
+  filter(year < 1988) |> 
+  group_by(state) |> 
+  summarize(price = mean(retprice)) |> 
+  arrange(desc(price))
+
+```
+:::
+
+## Pre-post estimator
+In this section, you will estimate the causal effect of the policy using the pre-post estimator. For this, you need to select only California from the data, then create a factor variable for the pre and post period, and then use linear regression to estimate the causal effect.
+
+::: {.callout-note}
+## Exercise 4
+Use `filter()` to select only California from the dataset and use `mutate()` to create a pre-post indicator variable called `prepost`. Remember: include the year 1988 in the pre-period. Make sure your `prepost` variable is of the type `factor`. Assign the result to a variable called `prop99_cali`.
+
+```{r}
+#| label: prepostprep
+
+# create the pre-post dataset
+prop99_cali <- 
+  prop99 |> 
+  filter(state == "California") |> 
+  mutate(prepost = as_factor(ifelse(year <= 1988, "Pre", "Post"))) 
+```
+:::
+
+In the lecture, we chose to include 12 years before and after the intervention. In this practical, we will use only 5 years before and after the intervention for our effect estimate.
+
+::: {.callout-note}
+## Exercise 5
+Use `filter()` to include data between 1984 and 1993. Then, use linear regression (`lm()`) to estimate the effect of the proposition 99 intervention, then use `summary` on the fitted model object to look at the estimate. Is this effect different from the one estimated in the lecture?
+
+```{r}
+#| label: prepostest
+
+# fit the model with 5 years pre and post
+fit_prepost <- lm(
+  formula = cigsale ~ prepost, 
+  data = prop99_cali |> filter(year > 1983, year < 1994)
+)
+
+# investigate the effect
+summary(fit_prepost)
+
+# the effect estimated in this way is -27.020
+# this is much smaller than in the lecture!
+```
+:::
+
+
+In the lecture, we did not correct the inference (p-value) for potential autocorrelation. We can do this with the function `coeftest()` on our fitted model object.
+
+::: {.callout-note}
+## Exercise 6
+Use `coeftest()` to correct the inference using heteroscedasticity and autocorrelation consistent (HAC) standard errors (pass the `vcovHAC` function from the `sandwich` package to the `.vcov` argument). Is the pre-post causal effect significantly different from 0?
+
+```{r}
+#| label: HAC-correct
+coeftest(fit_prepost, vcov. = vcovHAC)
+
+# The standard error is a little bigger
+# (it is now 5.29 versus 4.34 before)
+# but the effect is still significant at 
+# the 5% level. (p < .001)
+```
+:::
+
+## Difference-in-differences estimator
+
+In this section, we select a suitable control state to perform a diff-in-diff estimate of the causal effect of the policy intervention. In this section, you will not choose Utah as a control state as in the lectures, but one of the following states:
+
+- Nevada
+- Montana
+- Colorado
+
+Here are the data plots for these three states:
+
+```{r}
+#| label: didplots
+#| eval: true
+
+# Diff-in-diff time series figure
+prop99 |> 
+  filter(state %in% c("California", "Nevada", "Montana", "Colorado")) |> 
+  ggplot(aes(x = year, y = cigsale, colour = state)) +
+  geom_line(linewidth = 1) +
+  geom_vline(xintercept = 1988, lty = 2) +
+  theme_minimal() +
+  scale_colour_manual(values = c("orange", "#AA8888",  "#88AA88","#8888AA")) +
+  annotate("label", x = 1988, y = 150, label = "Intervention") +
+  labs(title = "Panel data for California three potential control states",
+       y = "Cigarette sales", x = "Year", colour = "")
 ```
 
-## Section 1
 
-some more text
+::: {.callout-note}
+## Exercise 7
+Create a dataset called `prop99_did` which includes California and your chosen control state. As before, create a `prepost` variable and include only the 5 years before and after the intervention.
+
+```{r}
+#| label: didprep
+
+# prepare the did data
+prop99_did <- 
+  prop99 |> 
+  filter(
+    state == "California" | state == "Nevada", 
+    year > 1983, year < 1994
+  ) |> 
+  mutate(prepost = as_factor(ifelse(year <= 1988, "Pre", "Post"))) |> 
+  filter()
+```
+:::
+
+
+::: {.callout-note}
+## Exercise 8
+Now, estimate the causal effect using the difference-in-differences estimator. For this, use the formula `cigsale ~ state * prepost` in the `lm()` function. Investigate the estimated effect using HAC standard errors as before. How big is the causal effect of the policy intervention and is this effect significantly different from 0?
+```{r}
+#| label: didestimate
+
+# fit the model with 5 years pre and post
+fit_did <- lm(
+  formula = cigsale ~ state * prepost, 
+  data = prop99_did
+)
+
+# investigate the effect
+coeftest(fit_did, vcov. = vcovHAC)
+
+# Using Nevada as a control,
+# the did causal effect is 5.68,
+# with a HAC s.e. of 5.42
+# so this effect is not significantly
+# different from 0.
+```
+:::
+
+## Conclusion
+
+You have created causal effect estimates using a pre-post design and using a diff-in-diff design, and you have corrected the inferences using heteroskedasticity and autocorrelation consistent standard errors. You have seen that the conclusions are very dependent on the choices made, for example about which period to consider and which control unit to choose.
