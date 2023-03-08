@@ -48,7 +48,7 @@ The first step in the `tidysynth` package framework is to create an object from 
 
 ::: {.callout-note}
 ## Exercise 1
-Use the the `synthetic_control()` function to create a synthetic control object from the `prop99` data. Read the help file to (`?synthetic_control`) if you need to know more about the arguments needed. Set the argument `generate_placebos = TRUE` (we will need this later).
+Use the the `synthetic_control()` function to create a synthetic control object from the `prop99` data called `prop99_syn`. Read the help file to (`?synthetic_control`) if you need to know more about the arguments needed. Set the argument `generate_placebos = TRUE` (we will need this later).
 
 ```{r}
 #| label: synthcontrol-object
@@ -90,7 +90,7 @@ The next step is to determine and create the variables that will be used for mat
 
 ::: {.callout-note}
 ## Exercise 3
-Generate the following predictors using the `generate_predictor()` function. You will need to run this function multiple times, once for each time period considered.
+Generate the following predictors using the `generate_predictor()` function. Assign the result to the `prop99_syn` object (think of this function as editing the object). You will need to run this function multiple times, once for each time period considered.
 
 - Mean (log-)income in 1980-1988
 - Mean retail price of cigarettes in 1980-1988
@@ -108,24 +108,29 @@ NB: there are some missing values in this data, so use `na.rm = TRUE` inside you
 # create predictors
 prop99_syn <- 
   prop99_syn |> 
+  # The first three predictors
   generate_predictor(
     time_window = 1980:1988,
     lnincome = mean(lnincome, na.rm = TRUE),
     retprice = mean(retprice, na.rm = TRUE),
     age15to24 = mean(age15to24, na.rm = TRUE)
   ) |> 
+  # Beer consumption in 1984-1988
   generate_predictor(
     time_window = 1984:1988,
     beer = mean(beer, na.rm = TRUE)
   ) |> 
+  # Cigarette sales in 1975
   generate_predictor(
     time_window = 1975,
     cigsale_1975 = cigsale
   ) |> 
+  # Cigarette sales in 1980
   generate_predictor(
     time_window = 1980,
     cigsale_1980 = cigsale
   ) |> 
+  # Cigarette sales in 1988
   generate_predictor(
     time_window = 1988,
     cigsale_1988 = cigsale
@@ -133,15 +138,204 @@ prop99_syn <-
 ```
 :::
 
+Now you have created a synthetic control object that includes both the target variable and covariates (predictors) for the treated unit and the units in the donor pool. The next step is to add the weights that define the synthetic control unit.
+
+
+::: {.callout-note}
+## Exercise 4
+Estimate synthetic control weights using the `generate_weights()` function. Just like the predictors, you should add these weights to the `prop99_syn` object. Inspect the unit and variable weights using the `plot_weights()` function.
+
+```{r}
+#| label: weights
+
+# generate the weights using the pre-intervention
+# time period as the optimization window
+prop99_syn <- 
+  prop99_syn |> 
+  generate_weights(optimization_window = 1970:1988)
+
+# inspect the unit and variable weights
+plot_weights(prop99_syn)
+```
+:::
+
+Now, everything is in place to create the synthetic control time-series.
+
+::: {.callout-note}
+## Exercise 5
+Create the synthetic control time-series for California cigarette sales using the function `generate_control()`. Then, inspect the result using `grab_synthetic_control()` and `plot_trends()`.
+
+```{r}
+#| label: syncontrol-timeseries
+
+# generate and inspect the dataset
+prop99_syn <- generate_control(prop99_syn)
+grab_synthetic_control(prop99_syn)
+
+# plot the synthetic and observed cigsales
+plot_trends(prop99_syn)
+```
+:::
+
+
 
 ## Inference using permutation test
 
-section 2
+Now we have our synthetic control timeseries $\hat{Y}^0_t$, we can estimate the average causal effect in the post-intervention period 1989-2000.
+
+
+::: {.callout-note}
+## Exercise 6
+Estimate the average causal effect in the post-intervention time period:
+
+$$\bar{CE} = \frac{1}{T} \sum_{t = 1}^{T} Y^1_t - Y^0_t$$
+```{r}
+#| label: causaleffect
+
+# estimating the average causal effect
+grab_synthetic_control(prop99_syn) |> 
+  filter(time_unit > 1988) |>
+  mutate(dif = real_y - synth_y) |> 
+  summarize(CE = mean(dif))
+
+```
+
+:::
+
+
+With `tidysynth`, it's easy to perform a permutation test. In fact, you have already done this by specifying `generate_placebos = TRUE`.
+
+::: {.callout-note}
+## Exercise 7
+Use the function `plot_placebos()` to compare the counterfactual estimate to the reference distribution obtained via a permutation test. 
+
+
+```{r}
+#| label: permutationtest
+
+# Placebo plot
+plot_placebos(prop99_syn)
+```
+:::
+
+
+::: {.callout-note}
+## Exercise 8 (OPTIONAL!)
+If you have time, use the `grab_synthetic_control()` function to create a similar permutation test plot for the average causal effect you computed before (comparing California's effect to the reference distribution).
+
+```{r}
+#| label: advanced
+
+# Create a dataset with average causal effect
+# for each state, also in the placebo group
+ce_data <- 
+  prop99_syn |> 
+  grab_synthetic_control(placebo = TRUE) |> 
+  filter(time_unit > 1988) |>
+  mutate(dif = real_y - synth_y) |> 
+  group_by(.id, .placebo) |> 
+  summarize(average_causal_effect = mean(dif), .groups = "drop") 
+
+# Create density plot with vline for California
+ce_data |> 
+  filter(.placebo == 1) |> 
+  ggplot(aes(x = average_causal_effect)) +
+  geom_density(fill = "grey") +
+  geom_rug() +
+  geom_vline(
+    mapping = aes(xintercept = average_causal_effect), 
+    data = ce_data |> filter(.placebo == 0)
+  ) +
+  geom_label(
+    aes(label = .id),
+    y = 0.02, 
+    data = ce_data |> filter(.placebo == 0)
+  ) + 
+  theme_minimal()
+
+```
+
+:::
 
 ## Robustness checks for units and variables
 
-section 3
+As mentioned in the lecture, this whole procedure hinges on a lot of choices. Through a robustness check (or sensitivity analysis) you can find out if your conclusions would have been differen if you had made a different choice somewhere in the study.
+
+::: {.callout-note}
+## Exercise 9
+Change one of the choices, rerun the analysis, and compare the results to the results you just created. For example:
+
+- Change the donor pool by taking out Utah and Nevada
+- Change the covariates by adding more, removing some, or changing the time window
+- Set the variable weights to the inverse of the covariate's variances instead of RMSPE estimation
+
+```{r}
+#| label: robust
+
+# do all three of the above.
+prop99_syn_robust <- 
+  prop99 |> 
+  # remove utah and nevada
+  filter(state != "Utah", state != "Nevada") |> 
+  # create synthetic control object
+  synthetic_control(
+    outcome = cigsale,
+    unit = state,
+    time = year,
+    i_unit = "California",
+    i_time = 1988,
+    generate_placebos = TRUE
+  ) |> 
+  # The first three predictors
+  generate_predictor(
+    time_window = 1976:1988, # Changed time window
+    lnincome = mean(lnincome, na.rm = TRUE),
+    retprice = mean(retprice, na.rm = TRUE),
+    age15to24 = mean(age15to24, na.rm = TRUE)
+  ) |> 
+  # Removed beer consumption in 1984-1988
+  # Cigarette sales in 1975
+  generate_predictor(
+    time_window = 1975,
+    cigsale_1975 = cigsale
+  ) |> 
+  # Cigarette sales in 1980
+  generate_predictor(
+    time_window = 1980,
+    cigsale_1980 = cigsale
+  ) |> 
+  # Added cigarette sales in 1984
+  generate_predictor(
+    time_window = 1984,
+    cigsale_1984 = cigsale
+  ) |> 
+  # Cigarette sales in 1988
+  generate_predictor(
+    time_window = 1988,
+    cigsale_1988 = cigsale
+  )
+
+# compute variance for each predictor
+v_weights <- 
+  grab_predictors(prop99_syn_robust, type = "controls") |> 
+  pivot_longer(-variable) |> 
+  group_by(variable) |> 
+  summarize(inverse_var = 1/var(value)) |> 
+  mutate(v_weight = inverse_var/sum(inverse_var)) |> 
+  pull(v_weight)
+
+# create weights and synthetic control
+prop99_syn_robust <- 
+  prop99_syn_robust |> 
+  generate_weights(custom_variable_weights = v_weights) |> 
+  generate_control()
+
+# plot the trend and permutation test
+plot_trends(prop99_syn_robust)
+plot_placebos(prop99_syn_robust)
+```
+:::
 
 ## Conclusion
 
-Section 4
+In this practical, you have created a causal effect estimate using the synthetic control method in the `tidysynth` package, you have performed inferences for this method, and you have created a single robustness check for this inference to see whether the conclusions change if a different decision were made earlier in the study design.
