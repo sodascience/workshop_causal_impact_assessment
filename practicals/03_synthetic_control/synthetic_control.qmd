@@ -1,29 +1,63 @@
 ---
-title: "Introduction"
+title: "Synthetic control: tidysynth, inference, robustness"
+subtitle: "Causal impact assessment workshop"
 author: "Erik-Jan van Kesteren & Oisín Ryan"
+eval: false
 format: 
   html:
     toc: true
+    self-contained: true
+    code-fold: true
+    df-print: paged
+    callout-appearance: simple
+    callout-icon: false
 ---
+
+In this practical, we will use the following two packages:
 
 ```{r}
 #| label: setup
-#| include: false
 #| message: false
 #| warning: false
+#| code-fold: false
+#| eval: true
 library(tidyverse)
+library(tidysynth)
 ```
 
-In this practical, we will ...
+We will again be using the proposition 99 dataset that we prepared.
 
-## The data
+::: {.callout-note}
+## Exercise 1
+Load the `proposition99` dataset in R using the `tidyverse` function `read_rds()`. Give the dataset the name `prop99`. 
+
+```{r}
+#| label: data-true
+#| echo: false
+#| eval: true
+prop99 <- read_rds("../../data/proposition99.rds")
+```
 
 ```{r}
 #| label: data
-prop99 <- read_rds("../../data/proposition99.rds")
-prop99
+
+# read the dataset to a variable called prop99
+prop99 <- read_rds("raw_data/data/proposition99.rds")
 ```
+:::
 
-## Section 1
+## Synthetic control in tidysynth
 
-some more text
+section 1
+
+## Inference using permutation test
+
+section 2
+
+## Robustness checks for units and variables
+
+section 3
+
+## Conclusion
+
+Section 4
