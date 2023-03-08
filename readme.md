@@ -1,3 +1,5 @@
+![logo](img/workshop_logo.svg)
+
 # Workshop causal impact assesment
 
 This webpage contains all the materials for a one-day workshop on causal impact assessment. The materials on this website are [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) licensed.
