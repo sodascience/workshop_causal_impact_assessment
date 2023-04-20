@@ -3881,7 +3881,8 @@ window.onload = function() {
    
   <ul>
   <li><a href="#data-preparation" id="toc-data-preparation" class="nav-link active" data-scroll-target="#data-preparation">Data preparation</a></li>
-  <li><a href="#running-the-model" id="toc-running-the-model" class="nav-link" data-scroll-target="#running-the-model">Running the model</a></li>
+  <li><a href="#estimating-counterfactual-cigarette-sales" id="toc-estimating-counterfactual-cigarette-sales" class="nav-link" data-scroll-target="#estimating-counterfactual-cigarette-sales">Estimating counterfactual cigarette sales</a></li>
+  <li><a href="#estimating-counterfactual-cigarette-sales-again" id="toc-estimating-counterfactual-cigarette-sales-again" class="nav-link" data-scroll-target="#estimating-counterfactual-cigarette-sales-again">Estimating counterfactual cigarette sales, again</a></li>
   </ul>
 </nav>
 </div>
@@ -3930,8 +3931,7 @@ window.onload = function() {
 <p>The <code>CausalImpact</code> package needs its input data to be in a specific format:</p>
 <ul>
 <li>there should be no missing values</li>
-<li>the response variable must be in the first column</li>
-<li>any potential covariates in subsequent columns</li>
+<li>the response variable must be in the first column and any covariates in subsequent columns</li>
 <li>There should not be a “year” or index column</li>
 </ul>
 <p>Thus, in order to run the method, we need to perform some data preparation steps.</p>
@@ -4014,16 +4014,127 @@ Exercise 3
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># data with all covariates from all states in donor pool</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>prop99_wide <span class="ot">&lt;-</span> </span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  prop99_wide  <span class="sc">|&gt;</span> </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  prop99_wide <span class="sc">|&gt;</span> </span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(cigsale_California) <span class="sc">|&gt;</span> </span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>year)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </div>
 </div>
+<div class="callout-note callout callout-style-simple no-icon callout-captioned">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-caption-container flex-fill">
+Exercise 4
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Create a second wide-format dataset which contains only the <code>cigsale</code> in the other states as covariates (so excluding the other variables like <code>lnincome</code> and <code>beer</code>). Hint: you can use the <code>starts_with()</code> function in combination with <code>select()</code>.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># data with cigsales from all states in donor pool</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>prop99_cigonly <span class="ot">&lt;-</span> </span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  prop99_wide <span class="sc">|&gt;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">starts_with</span>(<span class="st">&quot;cigsale&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</div>
+</div>
 </section>
-<section id="running-the-model" class="level2">
-<h2 class="anchored" data-anchor-id="running-the-model">Running the model</h2>
+<section id="estimating-counterfactual-cigarette-sales" class="level2">
+<h2 class="anchored" data-anchor-id="estimating-counterfactual-cigarette-sales">Estimating counterfactual cigarette sales</h2>
+<p>Now that we have our two datasets ready and in the right format, we can use the <code>CausalImpact</code> package to estimate the causal effect of the proposition 99 policy intervention. We do this by estimating the counterfactual time series (i.e., cigarette sales in California after 1988 <em>without</em> the intervention).</p>
+<div class="callout-note callout callout-style-simple no-icon callout-captioned">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-caption-container flex-fill">
+Exercise 5
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Read the help file (especially the usage, arguments, and example sections) of the <code>CausalImpact</code> function. Then, run a causal impact model on the data with only cigarette sale covariates. Remember: the intervention happened 1988, meaning the first 19 rows of the data are pre-intervention data.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># the first 18 years (1970 - 1988) are pre-intervention</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>pre_idx <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">19</span>) </span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># the years after that (1989 - 2000) are post-intervention</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>post_idx <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">20</span>, <span class="dv">31</span>) </span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate causal impact model</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>impact_cigsale <span class="ot">&lt;-</span> <span class="fu">CausalImpact</span>(</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> prop99_cigonly, </span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">pre.period =</span> pre_idx, </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">post.period =</span> post_idx</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</div>
+</div>
+<div class="callout-note callout callout-style-simple no-icon callout-captioned">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-caption-container flex-fill">
+Exercise 6
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>According to the model you just created, did the proposition 99 intervention cause a reduction in cigarette sales in the post-intervention years? To answer this question, use the <code>summary()</code> and <code>plot()</code> functions.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(impact_cigsale)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># summary</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(impact_cigsale)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># the estimated average difference in the post-intervention period -26%, </span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># but there is large uncertainty around this estimate (-41% - 5.7%)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</div>
+</div>
+<p>To investigate which set of states was included as covariates, we can look at the coefficients of the underlying Bayesian structural time series (<code>bsts</code>) model.</p>
+<div class="callout-note callout callout-style-simple no-icon callout-captioned">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-caption-container flex-fill">
+Exercise 7
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Which states were most important for the counterfactual predictions? To answer this question, first extract the model object (<code>model$bsts.model</code>) from the output of the <code>CausalImpact()</code> function, and then use the <code>plot()</code> and <code>summary()</code> functions to investigate the inclusion probabilities and the coefficients.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract bstsmod</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>bstsmod <span class="ot">&lt;-</span> impact_cigsale<span class="sc">$</span>model<span class="sc">$</span>bsts.model</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(bstsmod, <span class="st">&quot;coefficients&quot;</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># summary</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(bstsmod)<span class="sc">$</span>coefficients</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co"># New Hampshire, Nevada, and Montana are the most important states in the donor pool</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</div>
+</div>
+</section>
+<section id="estimating-counterfactual-cigarette-sales-again" class="level2">
+<h2 class="anchored" data-anchor-id="estimating-counterfactual-cigarette-sales-again">Estimating counterfactual cigarette sales, again</h2>
+<p>In the previous section, you have estimated the counterfactual for cigarette sales</p>
 </section>
 
 </main>

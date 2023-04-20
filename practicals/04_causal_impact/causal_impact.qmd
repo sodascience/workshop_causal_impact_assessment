@@ -101,7 +101,7 @@ Move the outcome of interest (`cigsale_California`) to the front of the dataset 
 
 # data with all covariates from all states in donor pool
 prop99_wide <- 
-  prop99_wide  |> 
+  prop99_wide |> 
   relocate(cigsale_California) |> 
   select(-year)
 ```
@@ -109,17 +109,85 @@ prop99_wide <-
 
 
 ::: {.callout-note}
-# Exercise 3
-Move the outcome of interest (`cigsale_California`) to the front of the dataset with `relocate()` and remove the `year` column with `select()`.
+# Exercise 4
+Create a second wide-format dataset which contains only the `cigsale` in the other states as covariates (so excluding the other variables like `lnincome` and `beer`). Hint: you can use the `starts_with()` function in combination with `select()`.
 
 ```{r}
-#| label: reorder
+#| label: cigsale_only
 
-# data with all covariates from all states in donor pool
-prop99_wide <- 
-  prop99_wide  |> 
-  relocate(cigsale_California) |> 
-  select(-year)
+# data with cigsales from all states in donor pool
+prop99_cigonly <- 
+  prop99_wide |>
+  select(starts_with("cigsale"))
 ```
 :::
-## Running the model
+
+## Estimating counterfactual cigarette sales
+Now that we have our two datasets ready and in the right format, we can use the `CausalImpact` package to estimate the causal effect of the proposition 99 policy intervention. We do this by estimating the counterfactual time series (i.e., cigarette sales in California after 1988 _without_ the intervention).
+
+
+::: {.callout-note}
+# Exercise 5
+Read the help file (especially the usage, arguments, and example sections) of the `CausalImpact` function. Then, run a causal impact model on the data with only cigarette sale covariates. Remember: the intervention happened 1988, meaning the first 19 rows of the data are pre-intervention data.
+
+```{r}
+#| label: cigsale_impact
+
+# the first 18 years (1970 - 1988) are pre-intervention
+pre_idx <- c(1, 19) 
+# the years after that (1989 - 2000) are post-intervention
+post_idx <- c(20, 31) 
+
+# Estimate causal impact model
+impact_cigsale <- CausalImpact(
+  data = prop99_cigonly, 
+  pre.period = pre_idx, 
+  post.period = post_idx
+)
+
+```
+:::
+
+
+::: {.callout-note}
+# Exercise 6
+According to the model you just created, did the proposition 99 intervention cause a reduction in cigarette sales in the post-intervention years? To answer this question, use the `summary()` and `plot()` functions.
+
+```{r}
+#| label: causal_conclusion_1
+
+# plot
+plot(impact_cigsale)
+
+# summary
+summary(impact_cigsale)
+
+# the estimated average difference in the post-intervention period -26%, 
+# but there is large uncertainty around this estimate (-41% - 5.7%)
+```
+:::
+
+To investigate which set of states was included as covariates, we can look at the coefficients of the underlying Bayesian structural time series (`bsts`) model. 
+
+::: {.callout-note}
+# Exercise 7
+Which states were most important for the counterfactual predictions? To answer this question, first extract the model object (`model$bsts.model`) from the output of the `CausalImpact()` function, and then use the `plot()` and `summary()` functions to investigate the inclusion probabilities and the coefficients.
+
+```{r}
+#| label: coefficients
+
+# Extract bstsmod
+bstsmod <- impact_cigsale$model$bsts.model
+
+# plot
+plot(bstsmod, "coefficients")
+
+# summary
+summary(bstsmod)$coefficients
+
+# New Hampshire, Nevada, and Montana are the most important states in the donor pool
+```
+:::
+
+## Estimating counterfactual cigarette sales, again
+In the previous section, you have estimated the counterfactual for cigarette sales
