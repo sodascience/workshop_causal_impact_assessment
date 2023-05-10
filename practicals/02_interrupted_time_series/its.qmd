@@ -1,5 +1,5 @@
 ---
-title: "Introduction"
+title: "Interrupted time series"
 author: "Erik-Jan van Kesteren & Oisín Ryan"
 format: 
   html:
@@ -14,16 +14,32 @@ format:
 library(tidyverse)
 ```
 
-In this practical, we will ...
 
-## The data
+In this practical, you will create several versions of interrupted time-series models for estimating the counterfactual cigarette sales. For the advanced time-series models with autoregression and differencing, we will use the package `fpp3`. First, load the following two packages:
 
 ```{r}
-#| label: data
-prop99 <- read_rds("../../data/proposition99.rds")
-prop99
+#| label: setup
+#| message: false
+#| warning: false
+#| code-fold: false
+#| eval: true
+library(tidyverse)
+library(fpp3)
 ```
 
-## Section 1
+We will again be using the proposition 99 dataset:
+```{r}
+#| label: data
+#| code-fold: false
 
-some more text
+prop99 <- read_rds("raw_data/proposition99.rds")
+```
+
+```{r}
+#| label: data-true
+#| echo: false
+#| eval: true
+prop99 <- read_rds("../../data/proposition99.rds")
+```
+
+
