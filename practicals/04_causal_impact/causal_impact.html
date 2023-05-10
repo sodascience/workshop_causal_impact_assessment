@@ -3883,6 +3883,7 @@ window.onload = function() {
   <li><a href="#data-preparation" id="toc-data-preparation" class="nav-link active" data-scroll-target="#data-preparation">Data preparation</a></li>
   <li><a href="#estimating-counterfactual-cigarette-sales" id="toc-estimating-counterfactual-cigarette-sales" class="nav-link" data-scroll-target="#estimating-counterfactual-cigarette-sales">Estimating counterfactual cigarette sales</a></li>
   <li><a href="#estimating-counterfactual-cigarette-sales-again" id="toc-estimating-counterfactual-cigarette-sales-again" class="nav-link" data-scroll-target="#estimating-counterfactual-cigarette-sales-again">Estimating counterfactual cigarette sales, again</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
   </ul>
 </nav>
 </div>
@@ -3912,6 +3913,7 @@ window.onload = function() {
 
 </header>
 
+<p>In this session, you will prepare two separate datasets to create counterfactual predictions using the <code>causalimpact</code> package, which implements a version of controlled interrupted time series analysis. You will also inspect the coefficients of the Bayesian model to understand which control unit / covariate is the most relevant for the predictions.</p>
 <p>In this practical, we will use the following packages:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
@@ -3919,6 +3921,9 @@ window.onload = function() {
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(CausalImpact)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>We will be using the proposition 99 dataset:</p>
+<div class="cell">
+
+</div>
 <div class="cell">
 
 </div>
@@ -4096,13 +4101,14 @@ Exercise 6
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># summary</span></span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(impact_cigsale)</span>
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># the estimated average difference in the post-intervention period -26%, </span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># but there is large uncertainty around this estimate (-41% - 5.7%)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># the estimated average relative difference in the post-intervention </span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># period is -26%, but there is large uncertainty around this estimate </span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co"># (-41% to 6.3%)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </div>
 </div>
-<p>To investigate which set of states was included as covariates, we can look at the coefficients of the underlying Bayesian structural time series (<code>bsts</code>) model.</p>
+<p>To investigate which set of states was included as control, we can look at the coefficients of the underlying Bayesian structural time series (<code>bsts</code>) model.</p>
 <div class="callout-note callout callout-style-simple no-icon callout-captioned">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -4134,7 +4140,52 @@ Exercise 7
 </section>
 <section id="estimating-counterfactual-cigarette-sales-again" class="level2">
 <h2 class="anchored" data-anchor-id="estimating-counterfactual-cigarette-sales-again">Estimating counterfactual cigarette sales, again</h2>
-<p>In the previous section, you have estimated the counterfactual for cigarette sales</p>
+<p>In the previous section, you have estimated the counterfactual for cigarette sales using only other county’s cigarette sales as covariates. Here, you will estimate the counterfactual using all available data.</p>
+<div class="callout-note callout callout-style-simple no-icon callout-captioned">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-caption-container flex-fill">
+Exercise 8
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Use the <code>causalimpact</code> package to estimate the counterfactual based on the wide format dataset you have prepared in Exercise 2, which includes multiple covariates per county. According to this analysis, did the proposition 99 intervention cause a reduction in cigarette sales in the post-intervention years? How does this analysis differ from the one which uses only cigarette sales?</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># estimate causal impact model</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>impact <span class="ot">&lt;-</span>  <span class="fu">CausalImpact</span>(</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> prop99_wide, </span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">pre.period =</span> pre_idx, </span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">post.period =</span> post_idx</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co"># create the main plot</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(impact)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co"># summarize the plot</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(impact)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co"># the estimated causal effect is smaller this time (-15%) and the</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co"># uncertainty is still wide (-36% to 10%) so from this analysis </span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co"># we would not conclude that the policy had a causal impact.</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co"># show the coefficients of the model&#39;s covariates</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(impact<span class="sc">$</span>model<span class="sc">$</span>bsts.model)<span class="sc">$</span>coefficients</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co"># this time, the model is a combination of many different factors</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="co"># so it it a lot more difficult to interpret. Note also that the</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="co"># cigsale variables are quite low on the list.</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</div>
+</div>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>In this practical, you have created your first causal effect estimates using Bayesian structural time series models in the <code>causalimpact</code> package. You have also inspected the model itself to find out which states or covariates were the most important in predicting the pre-intervention time series. You have seen that the conclusions and the estimated models can change depending on what data is fed into the model. Note that this was just the first step in using this type of analysis, the model can be adjusted in many ways after this point.</p>
 </section>
 
 </main>

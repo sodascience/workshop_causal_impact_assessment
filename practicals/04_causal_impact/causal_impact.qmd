@@ -13,6 +13,8 @@ format:
     callout-icon: false
 ---
 
+In this session, you will prepare two separate datasets to create counterfactual predictions using the `causalimpact` package, which implements a version of controlled interrupted time series analysis. You will also inspect the coefficients of the Bayesian model to understand which control unit / covariate is the most relevant for the predictions. 
+
 In this practical, we will use the following packages:
 
 ```{r}
@@ -29,6 +31,13 @@ library(CausalImpact)
 We will be using the proposition 99 dataset:
 
 ```{r}
+#| label: seed
+#| echo: false
+#| eval: true
+set.seed(45)
+```
+
+```{r}
 #| label: data-true
 #| echo: false
 #| eval: true
@@ -40,6 +49,7 @@ prop99 <- read_rds("../../data/proposition99.rds")
 prop99 <- read_rds("raw_data/proposition99.rds")
 prop99
 ```
+
 
 ## Data preparation
 
@@ -162,12 +172,13 @@ plot(impact_cigsale)
 # summary
 summary(impact_cigsale)
 
-# the estimated average difference in the post-intervention period -26%, 
-# but there is large uncertainty around this estimate (-41% - 5.7%)
+# the estimated average relative difference in the post-intervention 
+# period is -26%, but there is large uncertainty around this estimate 
+# (-41% to 6.3%)
 ```
 :::
 
-To investigate which set of states was included as covariates, we can look at the coefficients of the underlying Bayesian structural time series (`bsts`) model. 
+To investigate which set of states was included as control, we can look at the coefficients of the underlying Bayesian structural time series (`bsts`) model. 
 
 ::: {.callout-note}
 # Exercise 7
@@ -190,4 +201,41 @@ summary(bstsmod)$coefficients
 :::
 
 ## Estimating counterfactual cigarette sales, again
-In the previous section, you have estimated the counterfactual for cigarette sales
+In the previous section, you have estimated the counterfactual for cigarette sales using only other county's cigarette sales as covariates. Here, you will estimate the counterfactual using all available data.
+
+
+::: {.callout-note}
+# Exercise 8
+Use the `causalimpact` package to estimate the counterfactual based on the wide format dataset you have prepared in Exercise 2, which includes multiple covariates per county. According to this analysis, did the proposition 99 intervention cause a reduction in cigarette sales in the post-intervention years? How does this analysis differ from the one which uses only cigarette sales?
+
+```{r}
+#| label: causal_conclusion_2
+
+# estimate causal impact model
+impact <-  CausalImpact(
+  data = prop99_wide, 
+  pre.period = pre_idx, 
+  post.period = post_idx
+)
+
+# create the main plot
+plot(impact)
+
+# summarize the plot
+summary(impact)
+
+# the estimated causal effect is smaller this time (-15%) and the
+# uncertainty is still wide (-36% to 10%) so from this analysis 
+# we would not conclude that the policy had a causal impact.
+
+# show the coefficients of the model's covariates
+summary(impact$model$bsts.model)$coefficients
+
+# this time, the model is a combination of many different factors
+# so it it a lot more difficult to interpret. Note also that the
+# cigsale variables are quite low on the list.
+```
+:::
+
+## Conclusion
+In this practical, you have created your first causal effect estimates using Bayesian structural time series models in the `causalimpact` package. You have also inspected the model itself to find out which states or covariates were the most important in predicting the pre-intervention time series. You have seen that the conclusions and the estimated models can change depending on what data is fed into the model. Note that this was just the first step in using this type of analysis, the model can be adjusted in many ways after this point. 
