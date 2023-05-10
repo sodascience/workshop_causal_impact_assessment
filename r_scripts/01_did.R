@@ -46,7 +46,7 @@ ggsave("figures/cali_plot.png", width = 9, height = 6, bg = "white", dpi = 300)
 prop99_cali <- 
   prop99 |> 
   filter(state %in% "California", year >= 1976) |> 
-  mutate(prepost = as_factor(ifelse(year <= 1988, "Pre", "Post"))) 
+  mutate(prepost = factor(year > 1988, labels = c("Pre", "Post"))) 
 
 summary(lm(cigsale ~ prepost, data = prop99_cali))
 

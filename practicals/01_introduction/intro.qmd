@@ -112,7 +112,7 @@ Use `filter()` to select only California from the dataset and use `mutate()` to 
 prop99_cali <- 
   prop99 |> 
   filter(state == "California") |> 
-  mutate(prepost = as_factor(ifelse(year <= 1988, "Pre", "Post"))) 
+  mutate(prepost = factor(year > 1988, labels = c("Pre", "Post"))) 
 ```
 :::
 
@@ -199,7 +199,7 @@ prop99_did <-
     state == "California" | state == "Nevada", 
     year > 1983, year < 1994
   ) |> 
-  mutate(prepost = as_factor(ifelse(year <= 1988, "Pre", "Post"))) |> 
+  mutate(prepost = factor(year > 1988, labels = c("Pre", "Post"))) |> 
   filter()
 ```
 :::
