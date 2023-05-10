@@ -43,8 +43,8 @@ prop99_ts <-
   as_tsibble(index = "years")
 
 # divide into pre and post-intervention, as a time
-prop99_pre  <- prop99_ts[1:19,]
-prop99_post <- prop99_ts[20:31,]
+prop99_pre  <- prop99_ts |> filter(years < 1989)
+prop99_post <- prop99_ts |> filter(years > 1988)
 
 # fit model, allow fpp3 to do its own model selection based on information criteria
 fit_arima <-  prop99_pre |> 
@@ -63,7 +63,9 @@ fcasts |>
   autoplot(prop99_ts) + 
   geom_point(aes(y = cigsale_California), size = 0.5) +
   facet_grid(rows = vars(.model)) + 
-  geom_vline(xintercept = 1989, linetype = "dotted", color = "blue")
+  geom_vline(xintercept = 1982, linetype = "dotted", color = "blue") +
+  theme_minimal() +
+  
 
 # get the differences between the forecast and the real data to estimate causal effect
 # as dist_normal object from package {distributional}
@@ -82,8 +84,25 @@ time <- seq(0,length(cigsale_California)-1,1)
 int_dummy <- c(rep(0,19), rep(1,12))
 
 
-lmobj <- lm(cigsale_California ~ time + int_dummy + time:int_dummy)
+prop99_ts <- 
+  prop99_ts |> 
+  mutate(prepost = as_factor(ifelse(years <= 1988, "Pre", "Post")),
+         time = years-1970)
+
+lmobj <- lm(cigsale_California ~ time + prepost + time:prepost, prop99_ts)
 summary(lmobj)
+
+pred <- predict(lmobj, interval = "prediction")
+pred_df <- bind_cols(prop99_ts, as_tibble(pred))
+
+pred_df |> 
+  ggplot(aes(x = years, y = cigsale_California)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(years < 1989)) +
+  geom_line(aes(y = fit), data = pred_df |> filter(years < 1989)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(years > 1988)) +
+  geom_line(aes(y = fit), data = pred_df |> filter(years > 1988))
+
 
 plot(time, cigsale_California, type = "l", col = "green", lwd = 2)
 abline(v = 19, col = "grey" ,lty = 2)
