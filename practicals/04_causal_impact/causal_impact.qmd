@@ -1,29 +1,241 @@
 ---
-title: "Introduction"
+title: "Using the CausalImpact package"
+subtitle: "Causal impact assessment workshop"
 author: "Erik-Jan van Kesteren & Oisín Ryan"
+eval: false
 format: 
   html:
     toc: true
+    self-contained: true
+    code-fold: true
+    df-print: paged
+    callout-appearance: simple
+    callout-icon: false
 ---
+
+In this session, you will prepare two separate datasets to create counterfactual predictions using the `causalimpact` package, which implements a version of controlled interrupted time series analysis. You will also inspect the coefficients of the Bayesian model to understand which control unit / covariate is the most relevant for the predictions. 
+
+In this practical, we will use the following packages:
 
 ```{r}
 #| label: setup
-#| include: false
 #| message: false
 #| warning: false
+#| code-fold: false
+#| eval: true
 library(tidyverse)
+library(mice)
+library(CausalImpact)
 ```
 
-In this practical, we will ...
-
-## The data
+We will be using the proposition 99 dataset:
 
 ```{r}
-#| label: data
+#| label: seed
+#| echo: false
+#| eval: true
+set.seed(45)
+```
+
+```{r}
+#| label: data-true
+#| echo: false
+#| eval: true
 prop99 <- read_rds("../../data/proposition99.rds")
+```
+```{r}
+#| label: data
+#| code-fold: false
+prop99 <- read_rds("raw_data/proposition99.rds")
 prop99
 ```
 
-## Section 1
 
-some more text
+## Data preparation
+
+The `CausalImpact` package needs its input data to be in a specific format: 
+
+- there should be no missing values
+- the response variable must be in the first column and any covariates in subsequent columns
+- There should not be a "year" or index column
+
+Thus, in order to run the method, we need to perform some data preparation steps.
+
+::: {.callout-note}
+## Exercise 1
+Impute the missing values. Use the `mice()`, `complete()`, and `as_tibble()` functions to create a single dataset (`tibble`) without missing data. Use the `"cart"` method for imputation. If you are unfamiliar with (multiple) imputation, you can read the help file: `?mice`.
+
+```{r}
+#| label: mice
+
+# impute missing 
+prop99_imputed <- 
+  prop99 |> 
+  mice(m = 1, method = "rf") |> 
+  complete() |> 
+  as_tibble()
+```
+:::
+
+::: {.callout-warning}
+# Missing data imputation
+
+In the interest of time, we do not go into the details of missing data imputation. In real-world applications, you should be a lot more careful with imputation than we've shown here. For example: in the next steps, we are assuming that the imputed data is actually observed, and we do not consider that we are uncertain about those values. Interpret the models with a grain of salt.
+:::
+
+Now that we have a "fully observed" dataset, we transform our long format data (with state as one column) to a wide format (with a column for each state for each variable of interest).
+
+::: {.callout-note}
+## Exercise 2
+Create a wide-format dataset from the imputed data. Use the function `pivot_wider()`, where the new column names come from the `state` column, and the values come from the `cigsale`, `lnincome`, `beer`, `age15to24`, and `retprice` columns. 
+
+```{r}
+#| label: wider
+
+# data with all covariates from all states in donor pool
+prop99_wide <- 
+  prop99_imputed |> 
+  pivot_wider(
+    names_from = state, 
+    values_from = c(cigsale, lnincome, beer, age15to24, retprice)
+  )
+```
+:::
+
+::: {.callout-note}
+# Exercise 3
+Move the outcome of interest (`cigsale_California`) to the front of the dataset with `relocate()` and remove the `year` column with `select()`.
+
+```{r}
+#| label: reorder
+
+# data with all covariates from all states in donor pool
+prop99_wide <- 
+  prop99_wide |> 
+  relocate(cigsale_California) |> 
+  select(-year)
+```
+:::
+
+
+::: {.callout-note}
+# Exercise 4
+Create a second wide-format dataset which contains only the `cigsale` in the other states as covariates (so excluding the other variables like `lnincome` and `beer`). Hint: you can use the `starts_with()` function in combination with `select()`.
+
+```{r}
+#| label: cigsale_only
+
+# data with cigsales from all states in donor pool
+prop99_cigonly <- 
+  prop99_wide |>
+  select(starts_with("cigsale"))
+```
+:::
+
+## Estimating counterfactual cigarette sales
+Now that we have our two datasets ready and in the right format, we can use the `CausalImpact` package to estimate the causal effect of the proposition 99 policy intervention. We do this by estimating the counterfactual time series (i.e., cigarette sales in California after 1988 _without_ the intervention).
+
+
+::: {.callout-note}
+# Exercise 5
+Read the help file (especially the usage, arguments, and example sections) of the `CausalImpact` function. Then, run a causal impact model on the data with only cigarette sale covariates. Remember: the intervention happened 1988, meaning the first 19 rows of the data are pre-intervention data.
+
+```{r}
+#| label: cigsale_impact
+
+# the first 18 years (1970 - 1988) are pre-intervention
+pre_idx <- c(1, 19) 
+# the years after that (1989 - 2000) are post-intervention
+post_idx <- c(20, 31) 
+
+# Estimate causal impact model
+impact_cigsale <- CausalImpact(
+  data = prop99_cigonly, 
+  pre.period = pre_idx, 
+  post.period = post_idx
+)
+
+```
+:::
+
+
+::: {.callout-note}
+# Exercise 6
+According to the model you just created, did the proposition 99 intervention cause a reduction in cigarette sales in the post-intervention years? To answer this question, use the `summary()` and `plot()` functions.
+
+```{r}
+#| label: causal_conclusion_1
+
+# plot
+plot(impact_cigsale)
+
+# summary
+summary(impact_cigsale)
+
+# the estimated average relative difference in the post-intervention 
+# period is -26%, but there is large uncertainty around this estimate 
+# (-41% to 6.3%)
+```
+:::
+
+To investigate which set of states was included as control, we can look at the coefficients of the underlying Bayesian structural time series (`bsts`) model. 
+
+::: {.callout-note}
+# Exercise 7
+Which states were most important for the counterfactual predictions? To answer this question, first extract the model object (`model$bsts.model`) from the output of the `CausalImpact()` function, and then use the `plot()` and `summary()` functions to investigate the inclusion probabilities and the coefficients.
+
+```{r}
+#| label: coefficients
+
+# Extract bstsmod
+bstsmod <- impact_cigsale$model$bsts.model
+
+# plot
+plot(bstsmod, "coefficients")
+
+# summary
+summary(bstsmod)$coefficients
+
+# New Hampshire, Nevada, and Montana are the most important states in the donor pool
+```
+:::
+
+## Estimating counterfactual cigarette sales, again
+In the previous section, you have estimated the counterfactual for cigarette sales using only other county's cigarette sales as covariates. Here, you will estimate the counterfactual using all available data.
+
+
+::: {.callout-note}
+# Exercise 8
+Use the `causalimpact` package to estimate the counterfactual based on the wide format dataset you have prepared in Exercise 2, which includes multiple covariates per county. According to this analysis, did the proposition 99 intervention cause a reduction in cigarette sales in the post-intervention years? How does this analysis differ from the one which uses only cigarette sales?
+
+```{r}
+#| label: causal_conclusion_2
+
+# estimate causal impact model
+impact <-  CausalImpact(
+  data = prop99_wide, 
+  pre.period = pre_idx, 
+  post.period = post_idx
+)
+
+# create the main plot
+plot(impact)
+
+# summarize the plot
+summary(impact)
+
+# the estimated causal effect is smaller this time (-15%) and the
+# uncertainty is still wide (-36% to 10%) so from this analysis 
+# we would not conclude that the policy had a causal impact.
+
+# show the coefficients of the model's covariates
+summary(impact$model$bsts.model)$coefficients
+
+# this time, the model is a combination of many different factors
+# so it it a lot more difficult to interpret. Note also that the
+# cigsale variables are quite low on the list.
+```
+:::
+
+## Conclusion
+In this practical, you have created your first causal effect estimates using Bayesian structural time series models in the `causalimpact` package. You have also inspected the model itself to find out which states or covariates were the most important in predicting the pre-intervention time series. You have seen that the conclusions and the estimated models can change depending on what data is fed into the model. Note that this was just the first step in using this type of analysis, the model can be adjusted in many ways after this point. 
