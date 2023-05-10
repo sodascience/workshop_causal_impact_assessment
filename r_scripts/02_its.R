@@ -42,48 +42,91 @@ prop99_ts <-
   mutate(years = 1970:2000) |> 
   as_tsibble(index = "years")
 
-# divide into pre and post-intervention, as a time
+# divide into pre and post-intervention
 prop99_pre  <- prop99_ts |> filter(years < 1989)
 prop99_post <- prop99_ts |> filter(years > 1988)
 
-# fit model, allow fpp3 to do its own model selection based on information criteria
+
+# ----------- Exercise 1: ITS with a simple linear growth curve --------
+
+# here try a very growth curve simple model
+
+# prop99_pre_rs <- prop99_pre |>  mutate(prepost = as_factor(ifelse(years <= 1988, "Pre", "Post")),
+#                                           time = years-1970)
+
+
+lmobj <- lm(cigsale_California ~ years, prop99_pre)
+summary(lmobj)
+# here we see a negative slope, as we would expect
+
+
+# prop99_ts <- 
+#   prop99_ts |> 
+#   mutate(prepost = as_factor(ifelse(years <= 1988, "Pre", "Post")),
+#          time = years-1970)
+# 
+# lmobj <- lm(cigsale_California ~ time + prepost + time:prepost, prop99_ts)
+# summary(lmobj)
+
+pred <- predict(lmobj, prop99_ts, interval = "prediction")
+# pred_df <- bind_cols(prop99_pre, as_tibble(pred))
+
+pred |> 
+  ggplot(aes(x = years, y = cigsale_California)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(years < 1989)) +
+  geom_line(aes(y = fit), data = pred_df |> filter(years < 1989)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(years > 1988)) +
+  geom_line(aes(y = fit), data = pred_df |> filter(years > 1988))
+
+
+
+# ----------- Exercise 2: ITS with a more complex time-series model --------
+
+
+# fit model to pre-intervention time series.
+# here we allow fpp3 to do its own model selection based on information criteria
+# by default uses AICC, this can also be chosen in different ways, see ARIMA function documentation
 fit_arima <-  prop99_pre |> 
   model( 
-    timeseries = ARIMA(cigsale_California),
+    timeseries = ARIMA(cigsale_California, ic = "aicc"),
   )
 
-# timeseries is an ar1 model on the second difference
+# timeseries is an ar1 model on the second difference. 2nd order diference accounts for non-linear trends/non-stationarity
 report(fit_arima |> select(timeseries))
 
 # make forecasts for the post-intervention period and save this in an object
 fcasts <- fit_arima |> forecast(new_data = prop99_post)
 
+# predict(fit_arima, prop99_pre, interval = "prediction")
 # now plot the original data and forecasts
 fcasts |> 
   autoplot(prop99_ts) + 
   geom_point(aes(y = cigsale_California), size = 0.5) +
   facet_grid(rows = vars(.model)) + 
-  geom_vline(xintercept = 1982, linetype = "dotted", color = "blue") +
-  theme_minimal() +
+  geom_vline(xintercept = 1988, linetype = "dotted", color = "grey") +
+  ylim(-50, 150) +
+  theme_minimal() + annotate("label", x = 1988, y = 150, label = "Intervention")
   
 
 # get the differences between the forecast and the real data to estimate causal effect
 # as dist_normal object from package {distributional}
-fc <- fcasts |> filter(.model == "regression") |> pull(cigsale_California) - prop99_post$cigsale_California
-mfc <- sapply(fc, mean)
+# fc <- fcasts |> filter(.model == "timeseries") |> pull(cigsale_California) - prop99_post$cigsale_California
+# mfc <- sapply(fc, mean)
+# 
+# # and the cumulative difference 
+# plot(cumsum(mfc))
 
-# and the cumulative difference 
-cumsum(mfc)
 
 # -----------------------------------------------------------
 # ----------------- Regression Discontinuity ----------------
 # -----------------------------------------------------------
 
-cigsale_California <- prop99_ts$cigsale_California
-time <- seq(0,length(cigsale_California)-1,1)
-int_dummy <- c(rep(0,19), rep(1,12))
+# cigsale_California <- prop99_ts$cigsale_California
+# time <- seq(0,length(cigsale_California)-1,1)
+# int_dummy <- c(rep(0,19), rep(1,12))
 
-
+# here try a very simple model
 prop99_ts <- 
   prop99_ts |> 
   mutate(prepost = as_factor(ifelse(years <= 1988, "Pre", "Post")),
@@ -98,15 +141,19 @@ pred_df <- bind_cols(prop99_ts, as_tibble(pred))
 pred_df |> 
   ggplot(aes(x = years, y = cigsale_California)) +
   geom_line() +
-  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(years < 1989)) +
-  geom_line(aes(y = fit), data = pred_df |> filter(years < 1989)) +
-  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(years > 1988)) +
-  geom_line(aes(y = fit), data = pred_df |> filter(years > 1988))
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df) +
+  geom_line(aes(y = fit), data = pred_df) +
+  ylim(0, 150) +
+  theme_minimal() + annotate("label", x = 1988, y = 150, label = "Intervention") +
+  geom_vline(xintercept = 1988, linetype = "dotted", color = "grey")
+  
+  # geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(years > 1988)) +
+  # geom_line(aes(y = fit), data = pred_df |> filter(years > 1988))
 
-
-plot(time, cigsale_California, type = "l", col = "green", lwd = 2)
-abline(v = 19, col = "grey" ,lty = 2)
-abline(a = lmobj$coefficients[1], b = lmobj$coefficients[2], col = "grey")
+# 
+# plot(time, cigsale_California, type = "l", col = "green", lwd = 2)
+# abline(v = 19, col = "grey" ,lty = 2)
+# abline(a = lmobj$coefficients[1], b = lmobj$coefficients[2], col = "grey")
 
 # line segments here instead?
 
