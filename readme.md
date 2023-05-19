@@ -42,10 +42,12 @@ install.packages(c("tidyverse", "sandwich", "lmtest", "tidysynth", "rdrobust", "
 
 | Time  | Duration | Activity   | Content                            | link |
 | :---: | :------: | :--------- | :--------------------------------- | :--- |
-| 09:00 | 60       | Lecture    | Introduction + pre-post + DiD      | [`intro.pdf`](./lectures/01_introduction/intro.pdf) |
-| 10:00 | 30       | Practical  | Data intro + post-pre + DiD        | [`intro.html`](./practicals/01_introduction/intro.html) |
-| 10:30 | 15       | Break      |                                    | |
-| 10:45 | 45       | Lecture    | Interrupted time series (+RDD)     | [`its.pdf`](./lectures/02_interrupted_time_series/its.pdf) |
+| 09:00 | 45       | Lecture    | Introduction + pre-post + DiD      | [`intro.pdf`](./lectures/01_introduction/intro.pdf) |
+| 09:45 | 15       | Practical  | Setup + data intro                 | [`intro.html`](./practicals/01_introduction/intro.html) |
+| 10:00 | 25       | Lecture    | Pre-post + DiD                     | [`intro.pdf`](./lectures/01_introduction/intro.pdf) |
+| 10:25 | 20       | Practical  | Post-pre + DiD                     | [`intro.html`](./practicals/01_introduction/intro.html) |
+| 10:45 | 15       | Break      |                                    | |
+| 11:00 | 30       | Lecture    | Interrupted time series (+RDD)     | [`its.pdf`](./lectures/02_interrupted_time_series/its.pdf) |
 | 11:30 | 30       | Practical  | Interrupted time series (+RDD)     | [`its.html`](./practicals/02_interrupted_time_series/its.html) | 
 | 12:00 | 60       | Lunch      |                                    | |
 | 13:00 | 45       | Lecture    | Synthetic control                  | [`synthetic_control.pdf`](./lectures/03_synthetic_control/synthetic_control.pdf) |
