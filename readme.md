@@ -45,7 +45,7 @@ install.packages(c("tidyverse", "sandwich", "lmtest", "tidysynth", "rdrobust", "
 | 09:00 | 45       | Lecture    | Introduction + pre-post + DiD      | [`intro.pdf`](./lectures/01_introduction/intro.pdf) |
 | 09:45 | 15       | Practical  | Setup + data intro                 | [`intro.html`](./practicals/01_introduction/intro.html) |
 | 10:00 | 25       | Lecture    | Pre-post + DiD                     | [`intro.pdf`](./lectures/01_introduction/intro.pdf) |
-| 10:25 | 20       | Practical  | Post-pre + DiD                     | [`intro.html`](./practicals/01_introduction/intro.html) |
+| 10:25 | 20       | Practical  | Pre-post + DiD                     | [`intro.html`](./practicals/01_introduction/intro.html) |
 | 10:45 | 15       | Break      |                                    | |
 | 11:00 | 30       | Lecture    | Interrupted time series (+RDD)     | [`its.pdf`](./lectures/02_interrupted_time_series/its.pdf) |
 | 11:30 | 30       | Practical  | Interrupted time series (+RDD)     | [`its.html`](./practicals/02_interrupted_time_series/its.html) | 
