@@ -1,19 +1,17 @@
 ---
-title: "Interrupted time series"
+title: "Interrupted time series & regression discontinuity"
+subtitle: "Causal impact assessment workshop"
 author: "Erik-Jan van Kesteren & Oisín Ryan"
+eval: false
 format: 
   html:
     toc: true
+    self-contained: true
+    code-fold: true
+    df-print: paged
+    callout-appearance: simple
+    callout-icon: false
 ---
-
-```{r}
-#| label: setup
-#| include: false
-#| message: false
-#| warning: false
-library(tidyverse)
-```
-
 
 In this practical, you will create several versions of interrupted time-series models for estimating the counterfactual cigarette sales. For the advanced time-series models with autoregression and differencing, we will use the package `fpp3`. First, load the following two packages:
 
@@ -41,5 +39,133 @@ prop99 <- read_rds("raw_data/proposition99.rds")
 #| eval: true
 prop99 <- read_rds("../../data/proposition99.rds")
 ```
+
+
+## Data preparation
+In this practical, we will need to transform our dataset into a `tsibble` (a time-series table object). This is necessary for the `fpp3` package to figure out which column indicates time. We also only need the cigarette sales data from California for this practical You can prepare the data by running the following code:
+
+```{r}
+#| label: tsibble
+#| eval: true
+#| code-fold: false
+prop99_ts <- 
+  prop99 |> 
+  filter(state == "California") |> 
+  select(year, cigsale) |>
+  mutate(prepost = factor(year > 1988, labels = c("Pre", "Post"))) |> 
+  as_tsibble(index = year) |> 
+  mutate(year0 = year - min(year))
+```
+
+Note that we have also already included a `prepost` variable in the preparation which can be used to filter the pre or post-intervention time-series.
+
+## Growth curve
+Through estimating the effect of time on the pre-intervention time-series, we can create a prediction for the post-intervention counterfactual which includes a trend. In some fields, this approach is called estimating a "growth curve".
+
+::: {.callout-note}
+## Exercise 1
+Create the linear growth curve model from the slides: use linear regression to predict cigarette sales with the time variable `year` in the pre-intervention period. What is the estimated year-over-year decrease in cigarette sales?
+
+```{r}
+#| label: growthcurve
+
+# here fit a very simple growth curve simple model
+fit_growth <- lm(
+  formula = cigsale ~ year, 
+  prop99_ts |> filter(prepost == "Pre")
+)
+
+summary(fit_growth)
+# here we see a negative slope; decrease of 1.78 per year
+```
+:::
+
+
+::: {.callout-note}
+## Exercise 2
+Create predictions for the post-intervention period from this model. Then, estimate and interpret the average causal effect of the policy. 
+
+```{r}
+#| label: growthpred
+pred <- predict(
+  object = fit_growth, 
+  newdata = prop99_ts |> filter(prepost == "Post")
+)
+
+# effect at each time-point T
+ce_growth <- prop99_ts |> filter(prepost == "Post") |> pull(cigsale) - pred
+
+# ACE
+mean(ce_growth)
+
+# on average, 28.27 fewer cigarette packages per 100000 
+# people sold each year due to the intervention
+```
+:::
+
+## Time-series model
+
+Time-series techniques also take into account autocorrelations and the idea that recent values of the outcome of interest have more predictive power over the current value than values far in the past. With the `fpp3` package, we can do a data-driven model selection for the proposition 99 dataset and produce a counterfactual with automatic uncertainty quantification.
+
+::: {.callout-note}
+## Exercise 3
+
+Fit an `ARIMA()` model using only the pre-intervention cigarette sales data in California. Then, using the `forecast()` function, create forecasts for 12 years and plot those forecasts with the `autoplot()` function. What do you notice about the uncertainty in this plot?
+
+```{r}
+#| label: arima
+
+# create ARIMA model. NB: this user interface of the
+# FPP3 package is slightly idiosyncratic. Don't worry
+# too much about it!
+fit_arima <-  
+  prop99_ts |> 
+  filter(prepost == "Pre") |> 
+  model(timeseries = ARIMA(cigsale, ic = "aicc"))
+
+# create forecasts
+fcasts <- forecast(fit_arima, h = "12 years") 
+
+# plot the forecasts
+fcasts |> autoplot(prop99_ts)
+
+# Uncertainty interval becomes wider as we move further
+# in time.
+```
+:::
+
+::: {.callout-note}
+## Exercise 4
+
+Use the ARIMA forecasts to estimate the causal effect of the proposition 99 policy intervention.
+
+```{r}
+#| label: arima-estimate
+
+observed_cigsale <- 
+  prop99_ts |> 
+  filter(prepost == "Post") |> 
+  pull(cigsale)
+
+# you can use the predicted means directly
+mean(fcasts$.mean - observed_cigsale)
+
+# or you can get a prediction interval of the differences
+# by using the distribution objects in the forecasts
+# again, very idiosyncratic interface but this is how you
+# could get uncertainty around your ACE estimate
+ace_distribution <- sum(fcasts$cigsale - observed_cigsale) / 12
+ace_distribution
+
+# using the hilo function you can get 95% intervals:
+hilo(ace_distribution)
+
+# So the ACE is small and not significantly different from 0
+```
+:::
+
+## Conclusion
+
+In this practical, you have used growth curves and time-series models to predict the counterfactual: what would the cigarette sales have been in absence of the policy intervention? There are many more details you could go into with these methods, e.g., better specific models, but this provides a starting point.
 
 

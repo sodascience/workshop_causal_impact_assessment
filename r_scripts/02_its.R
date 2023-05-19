@@ -31,13 +31,25 @@ prop99_ts <-
 
 # ----------- Exercise 1: ITS with a simple linear growth curve --------
 
-# here try a very growth curve simple model
-fit_growth <- lm(formula = cigsale ~ year, family = "gaussian", prop99_ts |> filter(prepost == "Pre"))
+# predict pre-intervention sales by year
+fit_growth <- lm(
+  formula = cigsale ~ year, 
+  prop99_ts |> filter(prepost == "Pre")
+)
+
+# predict values for the post-intervention period
+pred <- predict(
+  object = fit_growth, 
+  newdata = prop99_ts, 
+  interval = "prediction"
+)
+
 
 summary(fit_growth)
 # here we see a negative slope, as we would expect
 
-pred <- predict(fit_growth, prop99_ts, interval = "prediction")
+
+# plot
 pred_df <- bind_cols(prop99_ts, as_tibble(pred))
 
 pred_df |> 
