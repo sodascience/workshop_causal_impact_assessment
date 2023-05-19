@@ -42,21 +42,20 @@ install.packages(c("tidyverse", "sandwich", "lmtest", "tidysynth", "rdrobust", "
 
 | Time  | Duration | Activity   | Content                            | link |
 | :---: | :------: | :--------- | :--------------------------------- | :--- |
-| 09:00 | 30       | Lecture    | Introduction + causal inference    | [`intro_1.pdf`](./lectures/01_introduction/intro_1.pdf) |
-| 09:30 | 30       | Lecture    | running example + basic estimators | [`intro_2.pdf`](./lectures/01_introduction/intro_2.pdf) |
+| 09:00 | 60       | Lecture    | Introduction + pre-post + DiD      | [`intro.pdf`](./lectures/01_introduction/intro.pdf) |
 | 10:00 | 30       | Practical  | Data intro + post-pre + DiD        | [`intro.html`](./practicals/01_introduction/intro.html) |
 | 10:30 | 15       | Break      |                                    | |
 | 10:45 | 45       | Lecture    | Interrupted time series (+RDD)     | [`its.pdf`](./lectures/02_interrupted_time_series/its.pdf) |
 | 11:30 | 30       | Practical  | Interrupted time series (+RDD)     | [`its.html`](./practicals/02_interrupted_time_series/its.html) | 
-| 12:00 | 60       | Lunch      |                                    |
+| 12:00 | 60       | Lunch      |                                    | |
 | 13:00 | 45       | Lecture    | Synthetic control                  | [`synthetic_control.pdf`](./lectures/03_synthetic_control/synthetic_control.pdf) |
 | 13:45 | 45       | Practical  | Synthetic control                  | [`synthetic_control.html`](./practicals/03_synthetic_control/synthetic_control.html) |
-| 14:30 | 15       | Break      |                                    |
+| 14:30 | 15       | Break      |                                    | |
 | 14:45 | 45       | Lecture    | (synthetic) CITS and CausalImpact  | [`causal_impact.pdf`](./lectures/04_causal_impact/causal_impact.pdf) |
 | 15:30 | 45       | Practical  | (synthetic) CITS and CausalImpact  | [`causal_impact.html`](./practicals/04_causal_impact/causal_impact.html) |
-| 16:15 | 15       | Break      |                                    |
+| 16:15 | 15       | Break      |                                    | |
 | 16:30 | 30       | Discussion | Conclusion + open questions        | [`discussion.pdf`](./lectures/05_discussion/discussion.pdf) |
-| 17:00 |          | End        |                                    |
+| 17:00 |          | End        |                                    | |
 
 You can download the dataset we have prepared from here: [`proposition99.rds`](./data/proposition99.rds). Save it in a nicely accessible place, we will be using it in every practical.
 
