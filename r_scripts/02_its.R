@@ -22,7 +22,7 @@ prop99_ts <-
   select(year, cigsale) |>
   mutate(prepost = factor(year > 1988, labels = c("Pre", "Post"))) |> 
   as_tsibble(index = year) |> 
-  mutate(year0 = year - min(year))
+  mutate(year0 = year - 1989)
 
 # ----------------------------------------------------------
 # --------------------------- ITS --------------------------

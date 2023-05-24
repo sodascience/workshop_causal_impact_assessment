@@ -56,7 +56,7 @@ prop99_ts <-
   select(year, cigsale) |>
   mutate(prepost = factor(year > 1988, labels = c("Pre", "Post"))) |> 
   as_tsibble(index = year) |> 
-  mutate(year0 = year - min(year))
+  mutate(year0 = year - 1989)
 ```
 
 Note that we have also already included a `prepost` variable in the preparation which can be used to filter the pre or post-intervention time-series.
@@ -85,7 +85,7 @@ summary(fit_growth)
 
 ::: {.callout-note}
 ## Exercise 2
-Create predictions for the post-intervention period from this model. Then, estimate and interpret the average causal effect of the policy. 
+Create predictions for the post-intervention period from this model. Then, estimate and interpret the causal effect(s) of the policy. 
 
 ```{r}
 #| label: growthpred
@@ -97,7 +97,7 @@ pred <- predict(
 # effect at each time-point T
 ce_growth <- prop99_ts |> filter(prepost == "Post") |> pull(cigsale) - pred
 
-# ACE
+# You could summarize these effects by taking the mean of them
 mean(ce_growth)
 
 # on average, 28.27 fewer cigarette packages per 100000 
@@ -169,27 +169,48 @@ hilo(ace_distribution)
 ```
 :::
 
-## Regression discontinuity 
+## Regression Discontinuity 
 
-in RDD we parameterize the effect directly in the model
+Regression discontinuity designs (RDDs) share many similarities to Interrupted Time Series approaches. In an RDD analysis, we typically fit a **piecewise** linear model of some kind, and test whether the relationship between two variables changes on either side of a threshold. In the context of Interrupted Time Series, this often amounts to fitting a **growth-curve** type model on the full time-series, including main and interaction effects of an intervention indicator. 
 
 ::: {.callout-note}
 ## Exercise 5
 
-Do RDD
+Using `lm()` and `prop99_ts`, fit the piecewise growth curve model described in the slides. For time use the `year0` column, in which time is centered around the intervention moment (i.e 1989 represents $time =0$). Make use of the dummy indicator `prepost`. Based on your model, does the intervention have an effect on the **trend** in cigarette sales?
 
 ```{r}
 #| label: rdd-estimate
 
+# year0 is scaled in this way to aid interpretability of the intercept terms, but has no effect on the slope terms
+# Note that the model is a little more complex than in Exercise 1, but is fit to the full time series
 fit_rdd <- lm(cigsale ~ year0 + prepost + year0:prepost, prop99_ts)
+
+# inspect the parameter estimates
 summary(fit_rdd)
+
+# the interaction effect year0:prepost parameterizes the change in trend after the intervention
+# -1.4947, p = .005 indicates a significant change in trend after the intervention
+# the trend is "more strongly negative" after the intervention
+
+# You can also visualize your RDD model using the below code
+pred_df |> 
+  ggplot(aes(x = year, y = cigsale)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(prepost == "Pre")) +
+  geom_line(aes(y = fit), data = pred_df |> filter(prepost == "Pre")) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(prepost == "Post")) +
+  geom_line(aes(y = fit), data = pred_df |> filter(prepost == "Post")) +
+  geom_line(linewidth = 1, color = "darkgreen") +
+  ylim(0, 150) +
+  theme_minimal() + 
+  geom_vline(xintercept = 1988, linetype = 2) +
+  annotate("label", x = 1988, y = 150, label = "Intervention")
 ```
 
 :::
 
 
+
 ## Conclusion
 
-In this practical, you have used growth curves, time-series models, and regression discontinuity to estimate the effect of the proposition 99 policy intervention. What would the cigarette sales have been in absence of the policy intervention? There are many more details you could go into with these methods, e.g., better specific models, but this provides a starting point.
-
+In this practical, you have used growth curves and time-series models to estimate the effect of the proposition 99 policy intervention. You have seen that these models can be used to "impute" the counterfactual or to directly parameterize the change in the target variable after the intervention. There are many details we skipped over here, such as how to best perform model selection, and the many different RDD-type analyses you could perform, but this provides a basic starting point. Notice how different model types can provide both different point estimates of the causal effect, and very different quantifications of our uncertainty around that causal effect. In particular ARIMA-type models, explicitly designed to forecast, will often reflect the idea that we become more and more uncertain about the future the farther ahead we want to predict. There is likely no simple answer to the question of which of these models or approaches should be preferred in practice.
 
