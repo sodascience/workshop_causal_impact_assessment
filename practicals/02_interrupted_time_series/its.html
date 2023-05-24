@@ -3883,6 +3883,7 @@ window.onload = function() {
   <li><a href="#data-preparation" id="toc-data-preparation" class="nav-link active" data-scroll-target="#data-preparation">Data preparation</a></li>
   <li><a href="#growth-curve" id="toc-growth-curve" class="nav-link" data-scroll-target="#growth-curve">Growth curve</a></li>
   <li><a href="#time-series-model" id="toc-time-series-model" class="nav-link" data-scroll-target="#time-series-model">Time-series model</a></li>
+  <li><a href="#regression-discontinuity" id="toc-regression-discontinuity" class="nav-link" data-scroll-target="#regression-discontinuity">Regression discontinuity</a></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
   </ul>
 </nav>
@@ -3929,13 +3930,14 @@ window.onload = function() {
 <h2 class="anchored" data-anchor-id="data-preparation">Data preparation</h2>
 <p>In this practical, we will need to transform our dataset into a <code>tsibble</code> (a time-series table object). This is necessary for the <code>fpp3</code> package to figure out which column indicates time. We also only need the cigarette sales data from California for this practical You can prepare the data by running the following code:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>prop99_ts <span class="ot">&lt;-</span> </span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  prop99 <span class="sc">|&gt;</span> </span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(state <span class="sc">==</span> <span class="st">&quot;California&quot;</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, cigsale) <span class="sc">|&gt;</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prepost =</span> <span class="fu">factor</span>(year <span class="sc">&gt;</span> <span class="dv">1988</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;Pre&quot;</span>, <span class="st">&quot;Post&quot;</span>))) <span class="sc">|&gt;</span> </span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_tsibble</span>(<span class="at">index =</span> year) <span class="sc">|&gt;</span> </span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year0 =</span> year <span class="sc">-</span> <span class="fu">min</span>(year))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># try to figure out what each line does!</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>prop99_ts <span class="ot">&lt;-</span> </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  prop99 <span class="sc">|&gt;</span> </span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(state <span class="sc">==</span> <span class="st">&quot;California&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, cigsale) <span class="sc">|&gt;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prepost =</span> <span class="fu">factor</span>(year <span class="sc">&gt;</span> <span class="dv">1988</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;Pre&quot;</span>, <span class="st">&quot;Post&quot;</span>))) <span class="sc">|&gt;</span> </span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_tsibble</span>(<span class="at">index =</span> year) <span class="sc">|&gt;</span> </span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year0 =</span> year <span class="sc">-</span> <span class="fu">min</span>(year))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Note that we have also already included a <code>prepost</code> variable in the preparation which can be used to filter the pre or post-intervention time-series.</p>
 </section>
@@ -4023,16 +4025,19 @@ Exercise 3
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>fit_arima <span class="ot">&lt;-</span>  </span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  prop99_ts <span class="sc">|&gt;</span> </span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(prepost <span class="sc">==</span> <span class="st">&quot;Pre&quot;</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">model</span>(<span class="at">timeseries =</span> <span class="fu">ARIMA</span>(cigsale, <span class="at">ic =</span> <span class="st">&quot;aicc&quot;</span>))</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># create forecasts</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>fcasts <span class="ot">&lt;-</span> <span class="fu">forecast</span>(fit_arima, <span class="at">h =</span> <span class="st">&quot;12 years&quot;</span>) </span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># here we use the corrected AIC to do model selection</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># many other methods of model selection are also </span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># possible (e.g. cross-validation)</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">model</span>(<span class="at">timeseries =</span> <span class="fu">ARIMA</span>(cigsale, <span class="at">ic =</span> <span class="st">&quot;aicc&quot;</span>)) </span>
 <span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the forecasts</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>fcasts <span class="sc">|&gt;</span> <span class="fu">autoplot</span>(prop99_ts)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># create forecasts</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>fcasts <span class="ot">&lt;-</span> <span class="fu">forecast</span>(fit_arima, <span class="at">h =</span> <span class="st">&quot;12 years&quot;</span>) </span>
 <span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Uncertainty interval becomes wider as we move further</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co"># in time.</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># plot the forecasts</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>fcasts <span class="sc">|&gt;</span> <span class="fu">autoplot</span>(prop99_ts)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Uncertainty interval becomes wider as we move further</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co"># in time.</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </div>
@@ -4075,9 +4080,33 @@ Exercise 4
 </div>
 </div>
 </section>
+<section id="regression-discontinuity" class="level2">
+<h2 class="anchored" data-anchor-id="regression-discontinuity">Regression discontinuity</h2>
+<p>in RDD we parameterize the effect directly in the model</p>
+<div class="callout-note callout callout-style-simple no-icon callout-captioned">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-caption-container flex-fill">
+Exercise 5
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Do RDD</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>fit_rdd <span class="ot">&lt;-</span> <span class="fu">lm</span>(cigsale <span class="sc">~</span> year0 <span class="sc">+</span> prepost <span class="sc">+</span> year0<span class="sc">:</span>prepost, prop99_ts)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fit_rdd)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</div>
+</div>
+</section>
 <section id="conclusion" class="level2">
 <h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
-<p>In this practical, you have used growth curves and time-series models to predict the counterfactual: what would the cigarette sales have been in absence of the policy intervention? There are many more details you could go into with these methods, e.g., better specific models, but this provides a starting point.</p>
+<p>In this practical, you have used growth curves, time-series models, and regression discontinuity to estimate the effect of the proposition 99 policy intervention. What would the cigarette sales have been in absence of the policy intervention? There are many more details you could go into with these methods, e.g., better specific models, but this provides a starting point.</p>
 </section>
 
 </main>

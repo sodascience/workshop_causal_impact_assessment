@@ -48,6 +48,8 @@ In this practical, we will need to transform our dataset into a `tsibble` (a tim
 #| label: tsibble
 #| eval: true
 #| code-fold: false
+
+# try to figure out what each line does!
 prop99_ts <- 
   prop99 |> 
   filter(state == "California") |> 
@@ -121,7 +123,10 @@ Fit an `ARIMA()` model using only the pre-intervention cigarette sales data in C
 fit_arima <-  
   prop99_ts |> 
   filter(prepost == "Pre") |> 
-  model(timeseries = ARIMA(cigsale, ic = "aicc"))
+  # here we use the corrected AIC to do model selection
+  # many other methods of model selection are also 
+  # possible (e.g. cross-validation)
+  model(timeseries = ARIMA(cigsale, ic = "aicc")) 
 
 # create forecasts
 fcasts <- forecast(fit_arima, h = "12 years") 
@@ -164,8 +169,27 @@ hilo(ace_distribution)
 ```
 :::
 
+## Regression discontinuity 
+
+in RDD we parameterize the effect directly in the model
+
+::: {.callout-note}
+## Exercise 5
+
+Do RDD
+
+```{r}
+#| label: rdd-estimate
+
+fit_rdd <- lm(cigsale ~ year0 + prepost + year0:prepost, prop99_ts)
+summary(fit_rdd)
+```
+
+:::
+
+
 ## Conclusion
 
-In this practical, you have used growth curves and time-series models to predict the counterfactual: what would the cigarette sales have been in absence of the policy intervention? There are many more details you could go into with these methods, e.g., better specific models, but this provides a starting point.
+In this practical, you have used growth curves, time-series models, and regression discontinuity to estimate the effect of the proposition 99 policy intervention. What would the cigarette sales have been in absence of the policy intervention? There are many more details you could go into with these methods, e.g., better specific models, but this provides a starting point.
 
 
