@@ -181,23 +181,29 @@ Using `lm()` and `prop99_ts`, fit the piecewise growth curve model described in 
 ```{r}
 #| label: rdd-estimate
 
-# year0 is scaled in this way to aid interpretability of the intercept terms, but has no effect on the slope terms
-# Note that the model is a little more complex than in Exercise 1, but is fit to the full time series
+# year0 is scaled in this way to aid interpretability 
+# of the intercept terms, but has no effect on the slope terms
+# Note that the model is a little more complex than in 
+# Exercise 1, but is fit to the full time series
 fit_rdd <- lm(cigsale ~ year0 + prepost + year0:prepost, prop99_ts)
 
 # inspect the parameter estimates
 summary(fit_rdd)
 
-# the interaction effect year0:prepost parameterizes the change in trend after the intervention
-# -1.4947, p = .005 indicates a significant change in trend after the intervention
-# the trend is "more strongly negative" after the intervention
+# the interaction effect year0:prepost parameterizes 
+# the change in trend after the intervention -1.4947, 
+# p = .005 indicates a significant change in trend after 
+# the intervention the trend is "more strongly negative" 
+# after the intervention
 
 # You can also visualize your RDD model using the below code
 pred_df |> 
   ggplot(aes(x = year, y = cigsale)) +
-  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(prepost == "Pre")) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, 
+              data = pred_df |> filter(prepost == "Pre")) +
   geom_line(aes(y = fit), data = pred_df |> filter(prepost == "Pre")) +
-  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, data = pred_df |> filter(prepost == "Post")) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2, 
+              data = pred_df |> filter(prepost == "Post")) +
   geom_line(aes(y = fit), data = pred_df |> filter(prepost == "Post")) +
   geom_line(linewidth = 1, color = "darkgreen") +
   ylim(0, 150) +
