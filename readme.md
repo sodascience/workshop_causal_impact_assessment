@@ -32,10 +32,10 @@ We assume the following:
   - `mice`
   - `CausalImpact`
 
-You can use the following code to install these at once:
-```r
-install.packages(c("tidyverse", "sandwich", "lmtest", "tidysynth", "rdrobust", "fpp3", "mice", "CausalImpact"))
-```
+  You can use the following code to install these at once:
+  ```r
+  install.packages(c("tidyverse", "sandwich", "lmtest", "tidysynth", "rdrobust", "fpp3", "mice", "CausalImpact"))
+  ```
 
 
 ## Workshop schedule & materials
@@ -44,8 +44,8 @@ install.packages(c("tidyverse", "sandwich", "lmtest", "tidysynth", "rdrobust", "
 | :---: | :------: | :--------- | :--------------------------------- | :--- |
 | 09:00 | 45       | Lecture    | Introduction + pre-post + DiD      | [`intro.pdf`](./lectures/01_introduction/intro.pdf) |
 | 09:45 | 15       | Practical  | Setup + data intro                 | [`intro.html`](./practicals/01_introduction/intro.html) |
-| 10:00 | 25       | Lecture    | Pre-post + DiD                     | [`intro.pdf`](./lectures/01_introduction/intro.pdf) |
-| 10:25 | 20       | Practical  | Pre-post + DiD                     | [`intro.html`](./practicals/01_introduction/intro.html) |
+| 10:00 | 25       | Lecture    | Pre-post + DiD                     | |
+| 10:25 | 20       | Practical  | Pre-post + DiD                     | |
 | 10:45 | 15       | Break      |                                    | |
 | 11:00 | 30       | Lecture    | Interrupted time series (+RDD)     | [`its.pdf`](./lectures/02_interrupted_time_series/its.pdf) |
 | 11:30 | 30       | Practical  | Interrupted time series (+RDD)     | [`its.html`](./practicals/02_interrupted_time_series/its.html) | 
@@ -76,6 +76,6 @@ Science (SoDa)](https://odissei-soda.nl/) team.
 
 <img src="img/soda_logo.png" alt="SoDa logo" width="250px"/>
 
-For questions about this course, you can contact us at [soda@odissei-data.nl](mailto:soda@odissei-data.nl).
+For questions about this course, you can contact us at [soda@odissei-data.nl](mailto:soda@odissei-data.nl), or you can contact the instructors Erik-Jan ([e.vankesteren1@uu.nl](mailto:e.vankesteren1@uu.nl)) or Oisín ([ryanoisin@gmail.com](mailto:ryanoisin@gmail.com)) directly.
 
 Course logo created by Nithinan Tatah from Noun Project
